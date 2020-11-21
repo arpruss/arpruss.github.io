@@ -66,7 +66,7 @@ class RaspberryJamMod {
             "blocks": [{
                     "opcode": "connect_p",
                     "blockType": "command",
-                    "text": "connect to [ip]",
+                    "text": "connect to Minecraft on [ip]",
                     "arguments": {
                         "ip": {
                             "type": "string",
