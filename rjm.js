@@ -177,13 +177,35 @@ class RaspberryJamMod {
                     }
             },            
             {
+                    "opcode": "turtleBlock",
+                    "blockType": "command",
+                    "text": "Turtle set block [b]",
+                    "arguments": {
+                        "b": {
+                            "type": "string",
+                            "defaultValue": "1",
+                        }
+                    }
+            },            
+            {
+                    "opcode": "turtleThickness",
+                    "blockType": "command",
+                    "text": "Turtle pen thickness [n]",
+                    "arguments": {
+                        "b": {
+                            "type": "number",
+                            "defaultValue": 1,
+                        }
+                    }
+            },            
+            {
                     "opcode": "blockByName",
                     "blockType": "reporter",
                     "text": "Block [name]",
                     "arguments": {
                         "name": {
                             "type": "string",
-                            "defaultValue": "0",
+                            "defaultValue": "1",
                             "menu": "blockMenu"
                         }
                     }
@@ -403,8 +425,38 @@ class RaspberryJamMod {
         this.turtle.penDown = false;
     }
     
+    turtleBlock({b}) {
+        this.turtle.block = b;
+    }
+    
+    turtleThickness({n}) {
+        if (n==0) {
+            this.turtle.nib = [];
+        }
+        else if (n==1) {
+            this.turtle.nib = [[0,0,0]];
+        }
+        else if (n==2) {
+            this.turtle.nib = [];
+            for (var x=0; x<=1; x++) 
+                for (var y=0; y<=1; y++) 
+                    for (var z=0; z<=1; z++) 
+                        this.turtle.nib.push([x,y,z]);
+        }
+        else {
+            var r2 = n*n/4;
+            var d = Math.ceil(n/2);
+            this.turtle.nib = [];
+            for (var x=-d; x<=d; x++) 
+                for (var y=-d; y<=d; y++) 
+                    for (var z=-d; z<=d; z++) 
+                        if (x*x+y*y+z*z <= r2)
+                            this.turtle.nib.push([x,y,z]);
+        }
+    }
+    
     penDown() {
-        this.turtle.penDown = treu;
+        this.turtle.penDown = true;
     }
     
     drawPoint(x0,y0,z0) {
