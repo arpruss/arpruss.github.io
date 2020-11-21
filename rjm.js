@@ -159,9 +159,9 @@ class RaspberryJamMod {
     };
 
     moveTurtle({n}) {
-        var newX = this.turtle.pos[0] + MCPI.matrix[0][2] * n;
-        var newY = this.turtle.pos[1] + MCPI.matrix[1][2] * n;
-        var newZ = this.turtle.pos[2] + MCPI.matrix[2][2] * n;
+        var newX = this.turtle.pos[0] + this.turtle.matrix[0][2] * n;
+        var newY = this.turtle.pos[1] + this.turtle.matrix[1][2] * n;
+        var newZ = this.turtle.pos[2] + this.turtle.matrix[2][2] * n;
         if (this.turtle.penDown)
             this.drawLine(this.turtle.pos[0],this.turtle.pos[1],this.turtle.pos[2],newX,newY,newZ);
         this.turtle.pos[0] = newX;
