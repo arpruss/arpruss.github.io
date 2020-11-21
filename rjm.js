@@ -107,7 +107,7 @@ class RaspberryJamMod {
             {
                     "opcode": "getPlayerCoord",
                     "blockType": "reporter",
-                    "text": "player [i]-coordinate",
+                    "text": "player [i] coordinate",
                     "arguments": {
                         "i": {
                             "type": "number",
@@ -161,8 +161,13 @@ class RaspberryJamMod {
             {
                     "opcode": "moveTurtle",
                     "blockType": "command",
-                    "text": "turtle forward [n]",
+                    "text": "turtle [dir] [n]",
                     "arguments": {
+                        "dir": {
+                            "type": "string",
+                            "menu": "moveMenu",
+                            "defaultValue": "forward"
+                        },
                         "n": {
                             "type": "number",
                             "defaultValue": "1"
@@ -170,21 +175,15 @@ class RaspberryJamMod {
                     }
             },            
             {
-                    "opcode": "backTurtle",
+                    "opcode": "turnTurtle",
                     "blockType": "command",
-                    "text": "turtle back [n]",
+                    "text": "turtle turn [dir] [n] degrees",
                     "arguments": {
-                        "n": {
-                            "type": "number",
-                            "defaultValue": "1"
+                        "dir": {
+                            "type": "string",
+                            "menu": "turnMenu",
+                            "defaultValue": "right"
                         },
-                    }
-            },            
-            {
-                    "opcode": "yawTurtle",
-                    "blockType": "command",
-                    "text": "turtle turn yaw [n]\u00B0",
-                    "arguments": {
                         "n": {
                             "type": "number",
                             "defaultValue": "0"
@@ -192,61 +191,15 @@ class RaspberryJamMod {
                     }
             },            
             {
-                    "opcode": "pitchTurtle",
+                    "opcode": "pen",
                     "blockType": "command",
-                    "text": "turtle turn pitch [n]\u00B0",
+                    "text": "turtle pen [state]",
                     "arguments": {
-                        "n": {
+                        "state": {
                             "type": "number",
-                            "defaultValue": "0"
-                        },
-                    }
-            },            
-            {
-                    "opcode": "rollTurtle",
-                    "blockType": "command",
-                    "text": "turtle turn roll [n]\u00B0",
-                    "arguments": {
-                        "n": {
-                            "type": "number",
-                            "defaultValue": "0"
-                        },
-                    }
-            },            
-            {
-                    "opcode": "leftTurtle",
-                    "blockType": "command",
-                    "text": "turtle left [n]\u00B0",
-                    "arguments": {
-                        "n": {
-                            "type": "number",
-                            "defaultValue": "0"
-                        },
-                    }
-            },            
-            {
-                    "opcode": "rightTurtle",
-                    "blockType": "command",
-                    "text": "turtle right [n]\u00B0",
-                    "arguments": {
-                        "n": {
-                            "type": "number",
-                            "defaultValue": "0"
-                        },
-                    }
-            },            
-            {
-                    "opcode": "penDown",
-                    "blockType": "command",
-                    "text": "turtle pen down",
-                    "arguments": {
-                    }
-            },            
-            {
-                    "opcode": "penUp",
-                    "blockType": "command",
-                    "text": "turtle pen up",
-                    "arguments": {
+                            "defaultValue": 1,
+                            "menu": "penMenu"
+                        }
                     }
             },            
             {
@@ -273,7 +226,10 @@ class RaspberryJamMod {
             },            
             ],
         "menus": {
+            moveMenu: [{text:"forward",value:1}, {text:"back",value:-1}],
+            penMenu: [{text:"down",value:1}, {text:"up",value:0}],
             coordinateMenu: [{text:"x",value:0}, {text:"y",value:1}, {text:"z",value:2}],
+            turnMenu: [ "left", "right", "yaw", "pitch", "roll" ],
             blockMenu: [
                 {text:"air",value:"0"},
                 {text:"bed",value:"26"},
@@ -460,31 +416,25 @@ class RaspberryJamMod {
         }
     };
     
-    yawTurtle({n}) {
-        this.turtle.matrix = this.turtle.mmMultiply(this.turtle.matrix, this.turtle.yawMatrix(n));    
+    turnTurtle({dir,n}) {
+        if (dir=="left") {
+            n = -n;
+            dir = "right";
+        }
+        
+        if (dir=="right" || dir=="yaw") {
+            this.turtle.matrix = this.turtle.mmMultiply(this.turtle.matrix, this.turtle.yawMatrix(n));    
+        }
+        else if (dir=="pitch") {
+            this.turtle.matrix = this.turtle.mmMultiply(this.turtle.matrix, this.turtle.pitchMatrix(n));    
+        }
+        else { // if (dir=="roll") {
+            this.turtle.matrix = this.turtle.mmMultiply(this.turtle.matrix, this.turtle.rollMatrix(n));    
+        }
     };
     
-    leftTurtle({n}) {
-        this.turtle.matrix = this.turtle.mmMultiply(this.turtle.matrix, this.turtle.yawMatrix(-n));    
-    };
-    
-    rightTurtle({n}) {
-        this.turtle.matrix = this.turtle.mmMultiply(this.turtle.matrix, this.turtle.yawMatrix(n));    
-    };
-    
-    pitchTurtle({n}) {
-        console.log("pitch "+n);
-        console.log(this.turtle.matrix);
-        this.turtle.matrix = this.turtle.mmMultiply(this.turtle.matrix, this.turtle.pitchMatrix(n));    
-        console.log(this.turtle.matrix);
-    };
-    
-    rollTurtle({n}) {
-        this.turtle.matrix = this.turtle.mmMultiply(this.turtle.matrix, this.turtle.rollMatrix(n));    
-    };
-    
-    penUp() {
-        this.turtle.penDown = false;
+    pen({state}) {
+        this.turtle.penDown = state;
     }
     
     turtleBlock({b}) {
@@ -540,7 +490,8 @@ class RaspberryJamMod {
         }
     };
 
-    moveTurtle({n}) {
+    moveTurtle({dir,n}) {
+        n *= dir;
         var newX = this.turtle.pos[0] + this.turtle.matrix[0][2] * n;
         var newY = this.turtle.pos[1] + this.turtle.matrix[1][2] * n;
         var newZ = this.turtle.pos[2] + this.turtle.matrix[2][2] * n;
@@ -549,10 +500,6 @@ class RaspberryJamMod {
         this.turtle.pos[0] = newX;
         this.turtle.pos[1] = newY;
         this.turtle.pos[2] = newZ;
-    }; 
-    
-    backTurtle({n}) {
-        moveTurtle({n:n});
     }; 
     
     getPosition() {
