@@ -117,15 +117,24 @@ class RaspberryJamMod {
                     }
             },            
             {
-                    "opcode": "getPlayerCoord",
+                    "opcode": "getPlayerX",
                     "blockType": "reporter",
-                    "text": "player [i] coordinate",
+                    "text": "player x position",
                     "arguments": {
-                        "i": {
-                            "type": "number",
-                            "defaultValue": 0,
-                            "menu": "coordinateMenu"
-                        }
+                    }
+            },            
+            {
+                    "opcode": "getPlayerY",
+                    "blockType": "reporter",
+                    "text": "player y position",
+                    "arguments": {
+                    }
+            },            
+            {
+                    "opcode": "getPlayerZ",
+                    "blockType": "reporter",
+                    "text": "player z position",
+                    "arguments": {
                     }
             },            
             {
@@ -622,13 +631,19 @@ class RaspberryJamMod {
             });
     };
 
-    getPlayerCoord({i}) {
-        return this.sendAndReceive("player.getPos()")
-            .then(pos => {
-                console.log(p);
-                var p = pos.split(",");
-                return parseFloat(p[i]);
-            });
+    getPlayerX() {
+        return this.getPosition()
+            .then(pos => pos[0]);
+    };
+
+    getPlayerY() {
+        return this.getPosition()
+            .then(pos => pos[1]);
+    };
+
+    getPlayerZ() {
+        return this.getPosition()
+            .then(pos => pos[2]);
     };
 
     connect_p({ip}){
