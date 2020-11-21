@@ -192,7 +192,7 @@ class RaspberryJamMod {
                     "blockType": "command",
                     "text": "Turtle pen thickness [n]",
                     "arguments": {
-                        "b": {
+                        "n": {
                             "type": "number",
                             "defaultValue": 1,
                         }
@@ -618,12 +618,11 @@ class RaspberryJamMod {
     };
     
     setBlock({x,y,z,b}) {
-/*      if (block != "0" && Math.floor(x) == Math.floor(this.playerX) && Math.floor(z) == Math.floor(this.playerZ)
-          && (Math.floor(y) >= this.playerShiftedHeight) ) {
-            this.playerShiftedHeight = Math.floor(y) + 1;
-            this.socket.send("player.setPos("+this.playerX+","+this.playerShiftedHeight+","+this.playerZ+")");
-      } */
-      console.log("Put "+b+" at "+x+" "+y+" "+z);
+      if (b != "0" && Math.floor(x) == Math.floor(this.playerPos[0]) && Math.floor(z) == Math.floor(this.playerPos[2]) && 
+            Math.floor(y) == Math.floor(this.playerPos[1])+1) {
+                this.playerPos[1]++; 
+                this.socket.send("player.setPos("+this.playerPos[0]+","+this.playerPos[1]+","+this.playerPos[2]);
+      }
       this.socket.send("world.setBlock("+x+","+y+","+z+","+b+")");
     };
 }
