@@ -413,7 +413,7 @@ class RaspberryJamMod {
             penMenu: [{text:"down",value:1}, {text:"up",value:0}],
             coordinateMenu: [{text:"x",value:0}, {text:"y",value:1}, {text:"z",value:2}],
             turnMenu: [ "yaw", "pitch", "roll" ],
-            spawnMenu: ["Item",
+            entityMenu: ["Item",
                 "XPOrb",
                 "LeashKnot",
                 "Painting",
