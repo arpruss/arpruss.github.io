@@ -54,7 +54,7 @@ class RaspberryJamMod {
             "blocks": [{
                     "opcode": "connect_p",
                     "blockType": "command",
-                    "text": "Connect to [ip]",
+                    "text": "connect to [ip]",
                     "arguments": {
                         "ip": {
                             "type": "string",
@@ -65,7 +65,7 @@ class RaspberryJamMod {
             {
                     "opcode": "chat",
                     "blockType": "command",
-                    "text": "Say in chat [msg]",
+                    "text": "say in chat [msg]",
                     "arguments": {
                         "msg": {
                             "type": "string",
@@ -74,9 +74,52 @@ class RaspberryJamMod {
                     }
             },            
             {
+                    "opcode": "blockByName",
+                    "blockType": "reporter",
+                    "text": "block [name]",
+                    "arguments": {
+                        "name": {
+                            "type": "string",
+                            "defaultValue": "1",
+                            "menu": "blockMenu"
+                        }
+                    }
+            },            
+            {
+                    "opcode": "getBlock",
+                    "blockType": "reporter",
+                    "text": "block at ([x],[y],[z])",
+                    "arguments": {
+                        "x": {
+                            "type": "number",
+                            "defaultValue": "0"
+                        },
+                        "y": {
+                            "type": "number",
+                            "defaultValue": "0"
+                        },
+                        "z": {
+                            "type": "number",
+                            "defaultValue": "0"
+                        },
+                    }
+            },            
+            {
+                    "opcode": "getPlayerCoord",
+                    "blockType": "reporter",
+                    "text": "player [i]-coordinate",
+                    "arguments": {
+                        "i": {
+                            "type": "number",
+                            "defaultValue": 0,
+                            "menu": "coordinateMenu"
+                        }
+                    }
+            },            
+            {
                     "opcode": "setBlock",
                     "blockType": "command",
-                    "text": "At ([x],[y],[z]) put block [b]",
+                    "text": "put block [b] at ([x],[y],[z])",
                     "arguments": {
                         "x": {
                             "type": "number",
@@ -97,9 +140,39 @@ class RaspberryJamMod {
                     }
             },            
             {
+                    "opcode": "setPlayerPos",
+                    "blockType": "command",
+                    "text": "move player to ([x],[y],[z])",
+                    "arguments": {
+                        "x": {
+                            "type": "number",
+                            "defaultValue": 0
+                        },
+                        "y": {
+                            "type": "number",
+                            "defaultValue": 0
+                        },
+                        "z": {
+                            "type": "number",
+                            "defaultValue": 0
+                        },
+                    }
+            },            
+            {
                     "opcode": "moveTurtle",
                     "blockType": "command",
-                    "text": "Turtle forward [n] steps",
+                    "text": "turtle forward [n]",
+                    "arguments": {
+                        "n": {
+                            "type": "number",
+                            "defaultValue": "1"
+                        },
+                    }
+            },            
+            {
+                    "opcode": "backTurtle",
+                    "blockType": "command",
+                    "text": "turtle back [n]",
                     "arguments": {
                         "n": {
                             "type": "number",
@@ -110,7 +183,7 @@ class RaspberryJamMod {
             {
                     "opcode": "yawTurtle",
                     "blockType": "command",
-                    "text": "Turn turtle yaw [n] degrees",
+                    "text": "turtle turn yaw [n]\u00B0",
                     "arguments": {
                         "n": {
                             "type": "number",
@@ -121,7 +194,7 @@ class RaspberryJamMod {
             {
                     "opcode": "pitchTurtle",
                     "blockType": "command",
-                    "text": "Turn turtle pitch [n] degrees",
+                    "text": "turtle turn pitch [n]\u00B0",
                     "arguments": {
                         "n": {
                             "type": "number",
@@ -132,7 +205,7 @@ class RaspberryJamMod {
             {
                     "opcode": "rollTurtle",
                     "blockType": "command",
-                    "text": "Turn turtle roll [n] degrees",
+                    "text": "turtle turn roll [n]\u00B0",
                     "arguments": {
                         "n": {
                             "type": "number",
@@ -143,7 +216,7 @@ class RaspberryJamMod {
             {
                     "opcode": "leftTurtle",
                     "blockType": "command",
-                    "text": "Turn turtle left [n] degrees",
+                    "text": "turtle left [n]\u00B0",
                     "arguments": {
                         "n": {
                             "type": "number",
@@ -154,7 +227,7 @@ class RaspberryJamMod {
             {
                     "opcode": "rightTurtle",
                     "blockType": "command",
-                    "text": "Turn turtle right [n] degrees",
+                    "text": "turtle right [n]\u00B0",
                     "arguments": {
                         "n": {
                             "type": "number",
@@ -163,23 +236,23 @@ class RaspberryJamMod {
                     }
             },            
             {
-                    "opcode": "penUp",
+                    "opcode": "penDown",
                     "blockType": "command",
-                    "text": "Turtle pen up",
+                    "text": "turtle pen down",
                     "arguments": {
                     }
             },            
             {
-                    "opcode": "penDown",
+                    "opcode": "penUp",
                     "blockType": "command",
-                    "text": "Turtle pen down",
+                    "text": "turtle pen up",
                     "arguments": {
                     }
             },            
             {
                     "opcode": "turtleBlock",
                     "blockType": "command",
-                    "text": "Turtle set block [b]",
+                    "text": "turtle pen block [b]",
                     "arguments": {
                         "b": {
                             "type": "string",
@@ -190,7 +263,7 @@ class RaspberryJamMod {
             {
                     "opcode": "turtleThickness",
                     "blockType": "command",
-                    "text": "Turtle pen thickness [n]",
+                    "text": "turtle pen thickness [n]",
                     "arguments": {
                         "n": {
                             "type": "number",
@@ -198,20 +271,9 @@ class RaspberryJamMod {
                         }
                     }
             },            
-            {
-                    "opcode": "blockByName",
-                    "blockType": "reporter",
-                    "text": "Block [name]",
-                    "arguments": {
-                        "name": {
-                            "type": "string",
-                            "defaultValue": "1",
-                            "menu": "blockMenu"
-                        }
-                    }
-            },            
             ],
         "menus": {
+            coordinateMenu: [{text:"x",value:0}, {text:"y",value:1}, {text:"z",value:2}],
             blockMenu: [
                 {text:"air",value:"0"},
                 {text:"bed",value:"26"},
@@ -489,6 +551,10 @@ class RaspberryJamMod {
         this.turtle.pos[2] = newZ;
     }; 
     
+    backTurtle({n}) {
+        moveTurtle({n:n});
+    }; 
+    
     getPosition() {
         return this.sendAndReceive("player.getPos()")
             .then(pos => {
@@ -499,9 +565,25 @@ class RaspberryJamMod {
     
     getRotation() {
         return this.sendAndReceive("player.getRotation()")
+            .then(r => {
+                return parseFloat(r);
+            });
+    };
+    
+    getBlock({x,y,z}) {
+        return this.sendAndReceive("world.getBlockWithData("+Math.floor(x)+","+Math.floor(y)+","+Math.floor(z)+")")
+            .then(b => {
+                console.log("block "+b);
+                return b;
+            });
+    };
+
+    getPlayerCoord({i}) {
+        return this.sendAndReceive("player.getPos()")
             .then(pos => {
-                console.log("rotation "+pos);
-                return parseFloat(pos);
+                console.log(p);
+                var p = pos.split(",");
+                return parseFloat(p[i]);
             });
     };
 
@@ -618,12 +700,19 @@ class RaspberryJamMod {
     };
     
     setBlock({x,y,z,b}) {
-      if (b != "0" && Math.floor(x) == Math.floor(this.playerPos[0]) && Math.floor(z) == Math.floor(this.playerPos[2]) && 
-            Math.floor(y) == Math.floor(this.playerPos[1])+1) {
+      x = Math.floor(x);
+      y = Math.floor(y);
+      z = Math.floor(z);
+      if (b != "0" && x == Math.floor(this.playerPos[0]) && z == Math.floor(this.playerPos[2]) && 
+            y == Math.floor(this.playerPos[1])+1) {
                 this.playerPos[1]++; 
                 this.socket.send("player.setPos("+this.playerPos[0]+","+this.playerPos[1]+","+this.playerPos[2]);
       }
       this.socket.send("world.setBlock("+x+","+y+","+z+","+b+")");
+    };
+
+    setPlayerPos({x,y,z}) {
+      this.socket.send("player.setPos("+x+","+y+","+z+")");
     };
 }
 
