@@ -257,7 +257,31 @@ class RaspberryJamMod {
                             "defaultValue": 0
                         },
                     }
-            },            
+            },         
+            {
+                    "opcode": "spawnEntity",
+                    "blockType": "command",
+                    "text": "spawn [entity] at ([x],[y],[z])",
+                    "arguments": {
+                        "entity": {
+                            "type": "string",
+                            "defaultValue": "Villager",
+                            "menu": "entityMenu"
+                        },
+                        "x": {
+                            "type": "number",
+                            "defaultValue": 0
+                        },
+                        "y": {
+                            "type": "number",
+                            "defaultValue": 0
+                        },
+                        "z": {
+                            "type": "number",
+                            "defaultValue": 0
+                        },
+                    }
+            },
             {
                     "opcode": "moveTurtle",
                     "blockType": "command",
@@ -389,6 +413,67 @@ class RaspberryJamMod {
             penMenu: [{text:"down",value:1}, {text:"up",value:0}],
             coordinateMenu: [{text:"x",value:0}, {text:"y",value:1}, {text:"z",value:2}],
             turnMenu: [ "yaw", "pitch", "roll" ],
+            spawnMenu: ["Item",
+                "XPOrb",
+                "LeashKnot",
+                "Painting",
+                "Arrow",
+                "Snowball",
+                "Fireball",
+                "SmallFireball",
+                "ThrownEnderpearl",
+                "EyeOfEnderSignal",
+                "ThrownPotion",
+                "ThrownExpBottle",
+                "ItemFrame",
+                "WitherSkull",
+                "PrimedTnt",
+                "FallingSand",
+                "FireworksRocketEntity",
+                "ArmorStand",
+                "Boat",
+                "MinecartRideable",
+                "MinecartChest",
+                "MinecartFurnace",
+                "MinecartTNT",
+                "MinecartHopper",
+                "MinecartSpawner",
+                "MinecartCommandBlock",
+                "Mob",
+                "Monster",
+                "Creeper",
+                "Skeleton",
+                "Spider",
+                "Giant",
+                "Zombie",
+                "Slime",
+                "Ghast",
+                "PigZombie",
+                "Enderman",
+                "CaveSpider",
+                "Silverfish",
+                "Blaze",
+                "LavaSlime",
+                "EnderDragon",
+                "WitherBoss",
+                "Bat",
+                "Witch",
+                "Endermite",
+                "Guardian",
+                "Pig",
+                "Sheep",
+                "Cow",
+                "Chicken",
+                "Squid",
+                "Wolf",
+                "MushroomCow",
+                "SnowMan",
+                "Ozelot",
+                "VillagerGolem",
+                "EntityHorse",
+                "Rabbit",
+                "Villager",
+                "EnderCrystal",],
             blockMenu: { acceptReporters: true,
                 items: [
                 {text:"air",value:"0,0"},
@@ -683,6 +768,10 @@ class RaspberryJamMod {
                 var p = pos.split(",");
                 return [parseFloat(p[0]),parseFloat(p[1]),parseFloat(p[2])];
             });
+    };
+
+    spawnEntity({entity,x,y,z}) {
+        return this.sendAndReceive("world.spawnEntity("+entity+","+x+","+y+","+z+")"); // TODO: do something with entity ID
     };
 
     movePlayer({dx,dy,dz}) {
