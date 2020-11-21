@@ -88,7 +88,7 @@ class RaspberryJamMod {
             {
                     "opcode": "blockByName",
                     "blockType": "reporter",
-                    "text": "block [name]",
+                    "text": "block id of [name]",
                     "arguments": {
                         "name": {
                             "type": "string",
@@ -100,7 +100,7 @@ class RaspberryJamMod {
             {
                     "opcode": "getBlock",
                     "blockType": "reporter",
-                    "text": "block at ([x],[y],[z])",
+                    "text": "block id at ([x],[y],[z])",
                     "arguments": {
                         "x": {
                             "type": "number",
@@ -138,9 +138,33 @@ class RaspberryJamMod {
                     }
             },            
             {
-                    "opcode": "setBlock",
+                    "opcode": "setBlockEasy",
                     "blockType": "command",
                     "text": "put block [b] at ([x],[y],[z])",
+                    "arguments": {
+                        "x": {
+                            "type": "number",
+                            "defaultValue": "0"
+                        },
+                        "y": {
+                            "type": "number",
+                            "defaultValue": "0"
+                        },
+                        "z": {
+                            "type": "number",
+                            "defaultValue": "0"
+                        },
+                        "b": {
+                            "type": "string",
+                            "defaultValue": "1",
+                            "menu": "blockMenu"
+                        },
+                    }
+            },            
+            {
+                    "opcode": "setBlock",
+                    "blockType": "command",
+                    "text": "put block with id [b] at ([x],[y],[z])",
                     "arguments": {
                         "x": {
                             "type": "number",
@@ -182,7 +206,7 @@ class RaspberryJamMod {
             {
                     "opcode": "movePlayer",
                     "blockType": "command",
-                    "text": "move player by ([x],[y],[z])",
+                    "text": "move player by ([dx],[dy],[dz])",
                     "arguments": {
                         "dx": {
                             "type": "number",
@@ -239,12 +263,12 @@ class RaspberryJamMod {
             {
                     "opcode": "turnTurtle",
                     "blockType": "command",
-                    "text": "turtle turn [dir] [n] degrees",
+                    "text": "turtle [dir] [n] degrees",
                     "arguments": {
                         "dir": {
                             "type": "string",
                             "menu": "turnMenu",
-                            "defaultValue": "right"
+                            "defaultValue": "pitch"
                         },
                         "n": {
                             "type": "number",
@@ -265,9 +289,21 @@ class RaspberryJamMod {
                     }
             },            
             {
-                    "opcode": "turtleBlock",
+                    "opcode": "turtleBlockEasy",
                     "blockType": "command",
                     "text": "turtle pen block [b]",
+                    "arguments": {
+                        "b": {
+                            "type": "string",
+                            "defaultValue": "1",
+                            "menu": "blockMenu"
+                        }
+                    }
+            },            
+            {
+                    "opcode": "turtleBlock",
+                    "blockType": "command",
+                    "text": "turtle pen block with id [b]",
                     "arguments": {
                         "b": {
                             "type": "string",
@@ -316,7 +352,7 @@ class RaspberryJamMod {
             moveMenu: [{text:"forward",value:1}, {text:"back",value:-1}],
             penMenu: [{text:"down",value:1}, {text:"up",value:0}],
             coordinateMenu: [{text:"x",value:0}, {text:"y",value:1}, {text:"z",value:2}],
-            turnMenu: [ "left", "right", "yaw", "pitch", "roll" ],
+            turnMenu: [ "yaw", "pitch", "roll" ],
             blockMenu: [
                 {text:"air",value:"0"},
                 {text:"bed",value:"26"},
@@ -532,6 +568,10 @@ class RaspberryJamMod {
     }
     
     turtleBlock({b}) {
+        this.turtle.block = b;
+    }
+    
+    turtleBlockEasy({b}) {
         this.turtle.block = b;
     }
     
@@ -770,6 +810,10 @@ class RaspberryJamMod {
       } */
       this.socket.send("world.setBlock("+x+","+y+","+z+","+b+")");
     };
+
+    setBlockEasy(args) {
+        setBlock(args);
+    }
 
     setPlayerPos({x,y,z}) {
       this.socket.send("player.setPos("+x+","+y+","+z+")");
