@@ -204,7 +204,7 @@ class RaspberryJamMod {
             console.log("player position "+rjm.playerPos);
         })).then (result => rjm.getRotation().then( result => {
             rjm.playerRot = result;
-            rjm.turtle.matrix = rjm.turtle.yawMatrix(math.floor(0.5+result[1]/90)*90);
+            rjm.turtle.matrix = rjm.turtle.yawMatrix(Math.floor(0.5+result[1]/90)*90);
             console.log("player rotation "+rjm.playerRot);
         }));
     };
