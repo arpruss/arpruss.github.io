@@ -85,7 +85,7 @@ class RaspberryJamMod {
                         },
                     }
             },            
-/*            {
+            {
                     "opcode": "blockByName",
                     "blockType": "reporter",
                     "text": "block id of [name]",
@@ -115,8 +115,8 @@ class RaspberryJamMod {
                             "defaultValue": "0"
                         },
                     }
-            },             */
-            {
+            },             
+/*            {
                     "opcode": "haveBlock",
                     "blockType": "Boolean",
                     "text": "have [b] at ([x],[y],[z])",
@@ -139,7 +139,19 @@ class RaspberryJamMod {
                             "defaultValue": "0"
                         },
                     }
-            },            
+            },             */
+            {
+                    "opcode": "onBlock",
+                    "blockType": "Boolean",
+                    "text": "player on [b]",
+                    "arguments": {
+                        "b": {
+                            "type": "string",
+                            "defaultValue": "0,0",
+                            "menu": "blockMenu"
+                        },
+                    }
+            },
             {
                     "opcode": "getPlayerX",
                     "blockType": "reporter",
@@ -162,7 +174,7 @@ class RaspberryJamMod {
                     }
             },            
             {
-                    "opcode": "setBlockEasy",
+                    "opcode": "setBlock",
                     "blockType": "command",
                     "text": "put [b] at ([x],[y],[z])",
                     "arguments": {
@@ -313,7 +325,7 @@ class RaspberryJamMod {
                     }
             },            
             {
-                    "opcode": "turtleBlockEasy",
+                    "opcode": "turtleBlock",
                     "blockType": "command",
                     "text": "turtle pen block [b]",
                     "arguments": {
@@ -377,7 +389,8 @@ class RaspberryJamMod {
             penMenu: [{text:"down",value:1}, {text:"up",value:0}],
             coordinateMenu: [{text:"x",value:0}, {text:"y",value:1}, {text:"z",value:2}],
             turnMenu: [ "yaw", "pitch", "roll" ],
-            blockMenu: [
+            blockMenu: { acceptReporters: true,
+                items: [
                 {text:"air",value:"0,0"},
                 {text:"bed",value:"26,0"},
                 {text:"bedrock",value:"7,0"},
@@ -528,6 +541,7 @@ class RaspberryJamMod {
                 {text:"wool yellow",value:"35,4"}
             ]            
             }
+            }
         };
     };
 
@@ -538,7 +552,6 @@ class RaspberryJamMod {
     };
     
     blockByName({name}){
-        console.log("name "+name);
         return name;
     }
     
@@ -551,7 +564,6 @@ class RaspberryJamMod {
             rjm.socket.onerror = function(err) {
                 reject(err);
             };
-            console.log("sending "+msg);
             rjm.socket.send(msg);
         });
     };
@@ -631,7 +643,6 @@ class RaspberryJamMod {
     }
     
     restoreTurtle() {
-        console.log(this.turtleHistory[0]);
         if (this.turtleHistory.length > 0) {
             this.turtle = this.turtleHistory.pop();
         }
@@ -657,7 +668,6 @@ class RaspberryJamMod {
     };
 
     moveTurtle({dir,n}) {
-        console.log("move "+dir+" "+n);
         n *= dir;
         var newX = this.turtle.pos[0] + this.turtle.matrix[0][2] * n;
         var newY = this.turtle.pos[1] + this.turtle.matrix[1][2] * n;
@@ -676,7 +686,7 @@ class RaspberryJamMod {
     };
 
     movePlayer({dx,dy,dz}) {
-        return this.getPosition().then(pos => setPlayerPos({x:pos[0]+dx,y:pos[1]+dy,z:pos[2]+dz}));
+        return this.getPosition().then(pos => this.setPlayerPos({x:pos[0]+dx,y:pos[1]+dy,z:pos[2]+dz}));
     };
 
     
@@ -690,10 +700,14 @@ class RaspberryJamMod {
     getBlock({x,y,z}) {
         return this.sendAndReceive("world.getBlockWithData("+Math.floor(x)+","+Math.floor(y)+","+Math.floor(z)+")")
             .then(b => {
-                console.log("block "+b);
                 return b;
             });
     };
+
+    onBlock({b}) {
+        return this.getPosition().then( pos => this.sendAndReceive("world.getBlockWithData("+Math.floor(pos[0])+","+Math.floor(pos[1]-1)+","+Math.floor(pos[2])+")")
+                    .then( block => block == b ) );
+    }
 
     haveBlock({b,x,y,z}) {
         return this.sendAndReceive("world.getBlockWithData("+Math.floor(x)+","+Math.floor(y)+","+Math.floor(z)+")")
@@ -719,12 +733,10 @@ class RaspberryJamMod {
 
     connect_p({ip}){
         this.ip = ip;
-        console.log("connecting to "+ip);
         var rjm = this;
         return new Promise(function(resolve, reject) {            
             rjm.socket = new WebSocket("ws://"+ip+":14711");
             rjm.socket.onopen = function() {                
-                console.log("opened");
                 resolve();
             };
             rjm.socket.onerror = function(err) {
@@ -743,7 +755,6 @@ class RaspberryJamMod {
     
     chat({msg}){
         this.socket.send("chat.post("+msg+")");
-        console.log("chat: "+msg);
     };
     
     getLine(x1,y1,z1,x2,y2,z2) {
@@ -841,10 +852,6 @@ class RaspberryJamMod {
       } */
       this.socket.send("world.setBlock("+x+","+y+","+z+","+b+")");
     };
-
-    setBlockEasy(args) {
-        setBlock(args);
-    }
 
     setPlayerPos({x,y,z}) {
       this.socket.send("player.setPos("+x+","+y+","+z+")");
