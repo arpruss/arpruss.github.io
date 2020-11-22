@@ -155,22 +155,37 @@ class RaspberryJamMod {
             {
                     "opcode": "getPlayerX",
                     "blockType": "reporter",
-                    "text": "player x position",
+                    "text": "player x [mode] position",
                     "arguments": {
+                        "mode": {
+                            "type": "number",
+                            "defaultValue": 0,
+                            "menu": "modeMenu"
+                        },
                     }
             },            
             {
                     "opcode": "getPlayerY",
                     "blockType": "reporter",
-                    "text": "player y position",
+                    "text": "player y [mode] position",
                     "arguments": {
+                        "mode": {
+                            "type": "number",
+                            "defaultValue": 0,
+                            "menu": "modeMenu"
+                        },
                     }
             },            
             {
                     "opcode": "getPlayerZ",
                     "blockType": "reporter",
-                    "text": "player z position",
+                    "text": "player z [mode] position",
                     "arguments": {
+                        "mode": {
+                            "type": "number",
+                            "defaultValue": 0,
+                            "menu": "modeMenu"
+                        },
                     }
             },            
             {
@@ -413,6 +428,7 @@ class RaspberryJamMod {
             penMenu: [{text:"down",value:1}, {text:"up",value:0}],
             coordinateMenu: [{text:"x",value:0}, {text:"y",value:1}, {text:"z",value:2}],
             turnMenu: [ "yaw", "pitch", "roll" ],
+            modeMenu: [{text:"exact",value:1},{text:"block",value:0}],
             entityMenu: ["Item",
                 "XPOrb",
                 "LeashKnot",
@@ -805,19 +821,19 @@ class RaspberryJamMod {
             });
     };
 
-    getPlayerX() {
+    getPlayerX({mode}) {
         return this.getPosition()
-            .then(pos => pos[0]);
+            .then(pos => mode ? pos[0] : Math.floor(pos[0]));
     };
 
-    getPlayerY() {
+    getPlayerY({mode}) {
         return this.getPosition()
-            .then(pos => pos[1]);
+            .then(pos => mode ? pos[1] : Math.floor(pos[1]));
     };
 
-    getPlayerZ() {
+    getPlayerZ({mode}) {
         return this.getPosition()
-            .then(pos => pos[2]);
+            .then(pos => mode ? pos[2] : Math.floor(pos[2]));
     };
 
     connect_p({ip}){
