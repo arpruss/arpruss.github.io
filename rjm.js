@@ -913,6 +913,8 @@ class RaspberryJamMod {
         if (this.turtle.penDown != 0)
             this.drawLine(this.turtle.pos[0],this.turtle.pos[1],this.turtle.pos[2],newX,newY,newZ);
         this.turtle.pos = [newX,newY,newZ];
+        console.log("turtle at "+this.turtle.pos);
+        console.log("matrix "+this.turtle.matrix);
     }; 
     
     getPosition() {
