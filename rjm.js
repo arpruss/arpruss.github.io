@@ -1,6 +1,3 @@
-// https://combinatronics.com/arpruss/rjmscratch/main/rjm.js
-// https://sheeptester.github.io/scratch-gui/?url=https://combinatronics.com/arpruss/rjmscratch/main/rjm.js
-
 class RJMTurtle {
     constructor() {
         this.block = "1";
@@ -76,7 +73,7 @@ class RJMTurtle {
 }
 
 class RaspberryJamMod {
-    constructor() {
+    constructor(runtime) {
         this.clear();
     }
     
@@ -1161,4 +1158,4 @@ class RaspberryJamMod {
     };
 }
 
-Scratch.extensions.register(new RaspberryJamMod());
+Scratch.extensions.register(new RaspberryJamMod())
