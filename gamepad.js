@@ -54,30 +54,11 @@ class ScratchGamepad {
                     {
                         "opcode": "axisValue",
                         "blockType": "reporter",
-                        "text": "axis [b] value",
+                        "text": "position of axis [b]",
                         "arguments": {
                             "b": {
                                 "type": "number",
                                 "defaultValue": "0"
-                            },
-                        },
-                    },
-                    {
-                        "opcode": "rumble",
-                        "blockType": "command",
-                        "text": "rumble strong [s] and weak [w] for [t] sec.",
-                        "arguments": {
-                            "s": {
-                                "type": "number",
-                                "defaultValue": "0.25"
-                            },
-                            "w": {
-                                "type": "number",
-                                "defaultValue": "0.5"
-                            },
-                            "t": {
-                                "type": "number",
-                                "defaultValue": "0.25"
                             },
                         },                    
                     }
@@ -88,25 +69,18 @@ class ScratchGamepad {
         };
     }
     
-    getGamepad() {
-        var gamepads = navigator.getGamepads()
-        if (gamepads == null || gamepads.length == 0 || gamepads[0] == null) 
-            return null
-        else 
-            return gamepads[0]
-    }
-    
     update() {
         if (this.runtime.currentMSecs == this.currentMSecs)
             return
         this.currentMSecs = this.runtime.currentMSecs
-        var gamepad = this.getGamepad()
-        if (gamepad == null) {
+        var gamepads = navigator.getGamepads()
+        if (gamepads == null || gamepads.length == 0 || gamepads[0] == null) {
             this.previousButtons = []
             this.currentButtons = []
             this.axes = []
             return
         }
+        var gamepad = gamepads[0]
         if (gamepad.id != this.id) {
             this.id = gamepad.id
             this.previousButtons = []
@@ -124,17 +98,6 @@ class ScratchGamepad {
         this.currentAxes = []
         for (var i = 0; i < gamepad.axes.length; i++)
             this.currentAxes.push(gamepad.axes[i])
-    }
-    
-    rumble({s,w,t}) {
-        var gamepad = this.getGamepad()
-        if (gamepad != null && gamepad.vibrationActuator) {
-            gamepad.vibrationActuator.playEffect("dual-rumble", {
-                duration: 1000*t,
-                strongMagnitude: Math.max(0,Math.min(s,1)),
-                weakMagnitude: Math.max(0,Math.min(w,1))
-            });
-        }
     }
     
     buttonPressedReleased({b,pr}) {
