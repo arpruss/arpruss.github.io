@@ -10,18 +10,53 @@
 </form>
 <br>
 <p>
-Opcode reference: <a href="http://tsoj.manga.org/gakken/otona_gmc.html">here</a>.
-</p>
-<p>
 <h2>Example:</h2>
 <pre>
 START: TIA F ; put F into A register
  AO           ; display value of A register
- CAL SHTS     ; play short beep
+ CAL SHTS     ; play short beep (can omit "CAL")
  JUMP START   ; restart if flag set
  JUMP #01     ; go to second command in code (flag was set by first JUMP)
 </pre>
 </p>
+<p>
+<p>
+<h2>Quick Reference:</h2>
+<p>All opcodes set flag except in the circumstances mentioned.</p>
+<p>Source here.</p>
+<ul>
+<li><code>KA</code> (0): hex key&rarr;Ar and flag clear if hex key pressed</li>
+<li><code>AO</code> (1): display Ar on 7-seg LED</li>
+<li><code>CH</code> (2): Ar&harr;Br, Y&harr;Z</li>
+<li><code>CY</code> (3): Ar&harr;Yr</li>
+<li><code>AM</code> (4): Ar&rarr;[50+Yr]</li>
+<li><code>MA</code> (5): [50+Yr]&rarr;Ar</li>
+<li><code>M+</code> (6): [50+Yr]+A&rarr;Ar; flag clear if no overflow</li>
+<li><code>M-</code> (7): [50+Yr]-A&rarr;Ar; flag clear if no underflow</li>
+<li><code>TIA x</code> (8x): x&rarr;Ar (immediate x)</li>
+<li><code>AIA x</code> (9x): Ar+x&rarr;Ar (immediate x); flag clear if no overflow</li>
+<li><code>TIY x</code> (Ax): x&rarr;Y (immediate x)</li>
+<li><code>AIY x</code> (Bx): Ar+x&rarr;Yr (immediate x); flag clear if no overflow</li>
+<li><code>CIA x</code> (Cx): flag clear if x=Ar (immediate x)</li>
+<li><code>CIY x</code> (Dx): flag clear if x=Yr (immediate x)</li>
+<li><code>JUMP xy</code> (Fxy): jump to xy if flag set</li>
+<li><code>CAL RSTO</code> (E0): clear 7-seg LED</li>
+<li><code>CAL SETR</code> (E1): turn on LED #Yr</li>
+<li><code>CAL RSTR</code> (E2): turn off LED #Yr</li>
+<li><code>CAL CMPL</code> (E4): bitwise complement Ar</li>
+<li><code>CAL CHNG</code> (E5): Ar/Br/Yr/Zr&harr;A'r/B'r/Y'r/Z'r</li>
+<li><code>CAL SIFT</code> (E6): right shift Ar; flag clear if Ar was odd (!)</li>
+<li><code>CAL ENDS</code> (E7): end sound</li>
+<li><code>CAL ERRS</code> (E8): error sound</li>
+<li><code>CAL SHTS</code> (E9): short sound</li>
+<li><code>CAL LONS</code> (EA): long sound</li>
+<li><code>CAL SUND</code> (EB): play note in Ar (from 1 to E)</li>
+<li><code>CAL TIMR</code> (EC): delay (Ar+1)*0.1 sec.</li>
+<li><code>CAL DSPR</code> (ED): display [5F][5E] on the LEDs</li>
+<li><code>CAL DEM-</code> (EE): <a href="http://xl.cocolog-nifty.com/blog/2009/07/gmc-4-no-9829.html">decimal subtraction</a></li>
+<li><code>CAL DEM+</code> (EF): <a href="http://xl.cocolog-nifty.com/blog/2009/07/gmc-4-no-9829.html">decimal addition</a></li>
+</li>
+</ul>
 </body>
 <script type="text/javascript">
 function hex1(x) {
@@ -242,7 +277,7 @@ function assemble(input, output) {
                         out += "E" + extended[tokens[pos]]
                         break
                     }
-                    msg("unrecognized opcode")
+                    err("unrecognized opcode")
                     return
             }
         }
