@@ -1,0 +1,262 @@
+<html>
+<head>
+<title>Gakken GMC-4 / R-165 / Radio Shack Science Fair Microcomputer Trainer Assembler</title>
+</head>
+<form method="post" action="javascript:go()">
+ <textarea id="source" cols=50 rows=30></textarea><br>
+ <input type=submit value="Assemble">
+ <br/><br/>
+ Machine code: <input id="mc" size=80 readonly></textarea><br>
+</form>
+<br>
+<p>
+Opcode reference: <a href="http://tsoj.manga.org/gakken/otona_gmc.html">here</a>.
+</p>
+<p>
+<h2>Example:</h2>
+<pre>
+START: TIA F ; put F into A register
+ AO           ; display value of A register
+ CAL SHTS     ; play short beep
+ JUMP START   ; restart if flag set
+ JUMP #01     ; go to second command in code (flag was set by first JUMP)
+</pre>
+</p>
+</body>
+<script type="text/javascript">
+function hex1(x) {
+    return (x&0xF).toString(16).toUpperCase()
+}
+
+function hex2(x) {
+    return hex1(x>>4)+hex1(x)
+}
+
+function parseHex1(x) {
+    if (x.length == 1 && ('0'<=x && x<='9') || ('a' <= x && x <= 'f') || ('A' <= x && x <= 'A'))
+        return parseInt("0x"+x)
+    else
+        return null
+}
+
+function parseHex2(x) {
+    if (x.length == 1) {
+        return parseHex1(x)
+    }
+    else if (x.length == 2) {
+        var a = parseHex1(x[0])
+        if (a === null) {
+            return null
+        }
+        var b = parseHex2(x[1])
+        if (b === null) {
+            return null
+        }
+        return (a<<4)|b
+    }
+    else {
+        return null
+    }
+}
+
+function assemble(input, output) {
+    var labels = {}
+    var lines = input.split(/[\r\n]+/)
+    var extended = { rsto: "0", setr: "1", rstr: "2", cmpl: "4", chng: "5", sift: "6", ends: "7",
+                     errs: "8", shts: "9", lons: "A", sund: "B", timr: "C", dspr: "D", "dem-": "E", "dem+": "F" }
+    output.value = ""
+    var out = ""
+    
+    for (var i=0; i<lines.length; i++) {
+        err = function(msg) {
+            alert(msg+": "+lines[i])
+        }
+    
+        var tokens = lines[i].replace(/;.*/,"").trim().toLowerCase().split(/\s+/)
+        if (tokens.length == 0)
+            continue
+        var pos = 0
+        while (pos < tokens.length && tokens[pos].endsWith(":")) {
+            var label = tokens[0].substr(0,tokens[0].length-1)
+            if (label in labels) {
+                var targetPos = out.length
+                labels[label].target = targetPos
+                refs = labels[label].refs
+                for (var j = 0 ; j < refs.length ; j++) {
+                    var r = refs[j]
+                    out = out.substr(0,r)+hex2(targetPos)+out.substr(r+2)
+                }
+                labels[label].refs = []
+            }
+            else {
+                labels[label] = { target: pos, refs: [] }
+            }
+            pos++
+        }
+        if (pos < tokens.length) {
+            switch(tokens[pos]) {
+                case "ka":
+                    out += "0"
+                    break
+                case "ao":
+                    out += "1"
+                    break
+                case "ch":
+                    out += "2"
+                    break
+                case "cy":
+                    out += "3"
+                    break
+                case "am":
+                    out += "4"
+                    break
+                case "ma":
+                    out += "5"
+                    break
+                case "m+":
+                    out += "6"
+                    break
+                case "m-":
+                    out += "7"
+                    break
+                case "tia":
+                    if (pos + 1 >= tokens.length) {
+                        err("TIA needs value")
+                        return
+                    }
+                    out += "8"
+                    var x = parseHex1(tokens[pos+1])
+                    if (x === null) {
+                        err("invalid hex constant")
+                        return
+                    }
+                    out += hex1(x)
+                    break
+                case "aia":
+                    if (pos + 1 >= tokens.length) {
+                        err("AIA needs value")
+                        return
+                    }
+                    out += "9"
+                    var x = parseHex1(tokens[pos+1])
+                    if (x === null) {
+                        err("invalid hex constant")
+                        return
+                    }
+                    out += hex1(x)
+                    break
+                case "tiy":
+                    if (pos + 1 >= tokens.length) {
+                        err("TIY needs value")
+                        return
+                    }
+                    out += "A"
+                    var x = parseHex1(tokens[pos+1])
+                    if (x === null) {
+                        err("invalid hex constant")
+                        return
+                    }
+                    out += hex1(x)
+                    break
+                case "aiy":
+                    if (pos + 1 >= tokens.length) {
+                        err("TIY needs value")
+                        return
+                    }
+                    out += "B"
+                    var x = parseHex1(tokens[pos+1])
+                    if (x === null) {
+                        err("invalid hex constant")
+                        return
+                    }
+                    out += hex1(x)
+                    break
+                case "cia":
+                    if (pos + 1 >= tokens.length) {
+                        err("CIA needs value")
+                        return
+                    }
+                    out += "C"
+                    var x = parseHex1(tokens[pos+1])
+                    if (x === null) {
+                        err("invalid hex constant")
+                        return
+                    }
+                    out += hex1(x)
+                    break
+                case "ciy":
+                    if (pos + 1 >= tokens.length) {
+                        err("CIY needs value")
+                        return
+                    }
+                    out += "D"
+                    var x = parseHex1(tokens[pos+1])
+                    if (x === null) {
+                        err("invalid hex constant")
+                        return
+                    }
+                    out += hex1(x)
+                    break
+                case "cal":
+                    if (pos + 1 >= tokens.length || !(tokens[pos+1] in extended)) {
+                        err("CAL needs valid extended code")
+                        return
+                    }
+                    out += "E" + extended[tokens[pos+1]]
+                    break
+                case "jump": 
+                    if (pos + 1 >= tokens.length) {
+                        err("JUMP needs target")
+                        return
+                    }
+                    target = tokens[pos+1]
+                    out += "F"
+                    var targetPos
+                    if (target[0] == '#') {
+                        targetPos = parseHex2(target.substr(1))
+                        if (targetPos === null) {
+                            alert("Invalid hex constant")
+                            return
+                        }
+                        console.log(target.substr(1),target,targetPos)
+                    }
+                    else {
+                        if (target in labels) {
+                            if ("target" in labels[target]) {
+                                targetPos = labels[target].target
+                            }
+                            else {
+                                targetPos = parseHex2(target)
+                                labels[target].refs.push(out.length)
+                            }
+                        }
+                        else {
+                            targetPos = parseHex2(target)
+                            labels[target] = { refs: [out.length] }
+                        }
+                    }
+                    out += hex2(targetPos===null?0:targetPos)
+                    break;
+                default:
+                    if (tokens[pos] in extended) {
+                        out += "E" + extended[tokens[pos]]
+                        break
+                    }
+                    msg("unrecognized opcode")
+                    return
+            }
+        }
+    }
+    for (var label in labels) {
+        if (labels[label].refs.length && parseHex2(label)===null) {
+            alert("Unresolved label "+label)
+        }
+    }
+    output.value=out
+}
+
+function go() {
+    assemble(document.getElementById('source').value, document.getElementById('mc'))
+}
+</script>
+</html>
