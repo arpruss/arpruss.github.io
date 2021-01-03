@@ -78,7 +78,7 @@ function parseHex1(x,strict=false) {
             x = x.substr(1)
         }
     }
-    if (x.length == 1 && ('0'<=x && x<='9') || ('a' <= x && x <= 'f') || ('A' <= x && x <= 'A'))
+    if (x.length == 1 && ('0'<=x && x<='9') || ('a' <= x && x <= 'f') || ('A' <= x && x <= 'F'))
         return sign * parseInt("0x"+x)
     else
         return null
