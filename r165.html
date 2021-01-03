@@ -117,7 +117,7 @@ function assemble(input, output) {
             alert(msg+" ["+lines[i]+"]")
         }
     
-        var line = lines[i].replace(/;.*/,"").trim().toLowerCase()
+        var line = lines[i].replace(/;.*/,"").trim()
         if (line == "")
             continue
         var tokens = line.split(/\s+/)
@@ -142,7 +142,8 @@ function assemble(input, output) {
             pos++
         }
         if (pos < tokens.length) {
-            switch(tokens[pos]) {
+            var token = tokens[pos].toLowerCase()
+            switch(token) {
                 case "ka":
                     out += "0"
                     break
@@ -246,11 +247,11 @@ function assemble(input, output) {
                     out += hex1(x)
                     break
                 case "cal":
-                    if (pos + 1 >= tokens.length || !(tokens[pos+1] in extended)) {
+                    if (pos + 1 >= tokens.length || !(tokens[pos+1].toLowerCase() in extended)) {
                         err("CAL needs valid extended code")
                         return
                     }
-                    out += "E" + extended[tokens[pos+1]]
+                    out += "E" + extended[tokens[pos+1].toLowerCase()]
                     break
                 case "jump": 
                     if (pos + 1 >= tokens.length) {
@@ -285,8 +286,8 @@ function assemble(input, output) {
                     out += hex2(targetPos===null?0:targetPos)
                     break;
                 default:
-                    if (tokens[pos] in extended) {
-                        out += "E" + extended[tokens[pos]]
+                    if (token in extended) {
+                        out += "E" + extended[token]
                         break
                     }
                     err("unrecognized opcode")
