@@ -114,10 +114,13 @@ function assemble(input, output) {
     
     for (var i=0; i<lines.length; i++) {
         err = function(msg) {
-            alert(msg+": "+lines[i])
+            alert(msg+" ["+lines[i]+"]")
         }
     
-        var tokens = lines[i].replace(/;.*/,"").trim().toLowerCase().split(/\s+/)
+        var line = lines[i].replace(/;.*/,"").trim().toLowerCase()
+        if (line == "")
+            continue
+        var tokens = line.split(/\s+/)
         if (tokens.length == 0)
             continue
         var pos = 0
