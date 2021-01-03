@@ -126,8 +126,8 @@ function assemble(input, output) {
         var pos = 0
         while (pos < tokens.length && tokens[pos].endsWith(":")) {
             var label = tokens[0].substr(0,tokens[0].length-1)
+            var targetPos = out.length
             if (label in labels) {
-                var targetPos = out.length
                 labels[label].target = targetPos
                 refs = labels[label].refs
                 for (var j = 0 ; j < refs.length ; j++) {
@@ -137,7 +137,7 @@ function assemble(input, output) {
                 labels[label].refs = []
             }
             else {
-                labels[label] = { target: pos, refs: [] }
+                labels[label] = { target: targetPos, refs: [] }
             }
             pos++
         }
@@ -266,7 +266,6 @@ function assemble(input, output) {
                             alert("Invalid hex constant")
                             return
                         }
-                        console.log(target.substr(1),target,targetPos)
                     }
                     else {
                         if (target in labels) {
