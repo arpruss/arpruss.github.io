@@ -67,23 +67,33 @@ function hex2(x) {
     return hex1(x>>4)+hex1(x)
 }
 
-function parseHex1(x) {
+function parseHex1(x,strict=false) {
+    var sign = 1
+    if (!strict) {
+        if (x.length > 1 && x[0] == '#') {
+            x = x.substr(1)
+        }
+        if (x.length > 1 && x[0] == '-') {
+            sign = -1
+            x = x.substr(1)
+        }
+    }
     if (x.length == 1 && ('0'<=x && x<='9') || ('a' <= x && x <= 'f') || ('A' <= x && x <= 'A'))
-        return parseInt("0x"+x)
+        return sign * parseInt("0x"+x)
     else
         return null
 }
 
 function parseHex2(x) {
     if (x.length == 1) {
-        return parseHex1(x)
+        return parseHex1(x,strict=true)
     }
     else if (x.length == 2) {
-        var a = parseHex1(x[0])
+        var a = parseHex1(x[0],strict=true)
         if (a === null) {
             return null
         }
-        var b = parseHex2(x[1])
+        var b = parseHex2(x[1],strict=true)
         if (b === null) {
             return null
         }
