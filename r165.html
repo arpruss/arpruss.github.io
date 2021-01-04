@@ -55,7 +55,6 @@ START: TIA F ; put F into A register
 <li><code>CAL DSPR</code> (ED): display [5F][5E] on the LEDs</li>
 <li><code>CAL DEM-</code> (EE): <a href="http://xl.cocolog-nifty.com/blog/2009/07/gmc-4-no-9829.html">decimal subtraction</a></li>
 <li><code>CAL DEM+</code> (EF): <a href="http://xl.cocolog-nifty.com/blog/2009/07/gmc-4-no-9829.html">decimal addition</a></li>
-</li>
 </ul>
 </body>
 <script type="text/javascript">
@@ -301,6 +300,7 @@ function assemble(input, output) {
         }
     }
     output.value=out
+    output.select()
 }
 
 function go() {
