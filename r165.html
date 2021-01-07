@@ -2,9 +2,11 @@
 <head>
 <title>Gakken GMC-4 / R-165 / Radio Shack Science Fair Microcomputer Trainer Assembler</title>
 </head>
+ Source code:<br/>
  <textarea id="source" cols=50 rows=30></textarea><br>
- <button onclick="assembleIt()">Assemble</button>
- <button onclick="disassembleIt()">Disassemble</button>
+ <br/>
+ <button onclick="assembleIt()">Assemble (&darr;)</button>
+ <button onclick="disassembleIt()">Disassemble (&uarr;)</button>
  <br/><br/>
  Machine code: <input id="mc" size=80></textarea><br>
 <br>
@@ -15,7 +17,7 @@ START: TIA F ; put F into A register
  AO           ; display value of A register
  CAL SHTS     ; play short beep (can omit "CAL")
  JUMP START   ; restart if flag set
- JUMP #01     ; go to second command in code (flag was set by first JUMP)
+ JUMP #02     ; go to third nibble in code (flag was set by first JUMP)
 </pre>
 </p>
 <p>
@@ -78,8 +80,9 @@ function parseHex1(x,strict=false) {
     }
     if (x.length == 1 && ('0'<=x && x<='9') || ('a' <= x && x <= 'f') || ('A' <= x && x <= 'F'))
         return sign * parseInt("0x"+x)
-    else
+    else {
         return null
+        }
 }
 
 function parseHex2(x) {
@@ -240,7 +243,7 @@ function find(value, dict) {
 }
 
 function disassemble(mc, source) {
-    var code = mc.replace(/[\s,]/,'').trim().toUpperCase()
+    var code = mc.replaceAll(/[\s,]/g,'').trim().toUpperCase()
     var pos = 0
     var out = ""
     var labels = {}
