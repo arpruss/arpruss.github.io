@@ -2,12 +2,11 @@
 <head>
 <title>Gakken GMC-4 / R-165 / Radio Shack Science Fair Microcomputer Trainer Assembler</title>
 </head>
-<form method="post" action="javascript:go()">
  <textarea id="source" cols=50 rows=30></textarea><br>
- <input type=submit value="Assemble">
+ <button onclick="assembleIt()">Assemble</button>
+ <button onclick="disassembleIt()">Disassemble</button>
  <br/><br/>
- Machine code: <input id="mc" size=80 readonly></textarea><br>
-</form>
+ Machine code: <input id="mc" size=80></textarea><br>
 <br>
 <p>
 <h2>Example:</h2>
@@ -103,11 +102,14 @@ function parseHex2(x) {
     }
 }
 
+var extended = { rsto: "0", setr: "1", rstr: "2", cmpl: "4", chng: "5", sift: "6", ends: "7",
+                 errs: "8", shts: "9", lons: "A", sund: "B", timr: "C", dspr: "D", "dem-": "E", "dem+": "F" }
+var noArgs = { 'ka': '0', 'ao': '1', 'ch': '2', 'cy': '3', 'am': '4', 'ma': '5', 'm+': '6', 'm-': '7' }
+var immediate = { 'tia': '8', 'aia': '9', 'tiy': 'A', 'aiy': 'B', 'cia': 'C', 'ciy': 'D' }
+
 function assemble(input, output) {
     var labels = {}
     var lines = input.split(/[\r\n]+/)
-    var extended = { rsto: "0", setr: "1", rstr: "2", cmpl: "4", chng: "5", sift: "6", ends: "7",
-                     errs: "8", shts: "9", lons: "A", sund: "B", timr: "C", dspr: "D", "dem-": "E", "dem+": "F" }
     output.value = ""
     var out = ""
     
@@ -123,6 +125,7 @@ function assemble(input, output) {
         if (tokens.length == 0)
             continue
         var pos = 0
+        
         while (pos < tokens.length && tokens[pos].endsWith(":")) {
             var label = tokens[0].substr(0,tokens[0].length-1)
             var targetPos = out.length
@@ -140,157 +143,82 @@ function assemble(input, output) {
             }
             pos++
         }
+        
         if (pos < tokens.length) {
             var token = tokens[pos].toLowerCase()
-            switch(token) {
-                case "ka":
-                    out += "0"
-                    break
-                case "ao":
-                    out += "1"
-                    break
-                case "ch":
-                    out += "2"
-                    break
-                case "cy":
-                    out += "3"
-                    break
-                case "am":
-                    out += "4"
-                    break
-                case "ma":
-                    out += "5"
-                    break
-                case "m+":
-                    out += "6"
-                    break
-                case "m-":
-                    out += "7"
-                    break
-                case "tia":
-                    if (pos + 1 >= tokens.length) {
-                        err("TIA needs value")
+            if (token in noArgs) {
+                out += noArgs[token]
+            }
+            else if (token in immediate) {
+                if (pos + 1 >= tokens.length) {
+                    err(token+" needs value")
+                    return
+                }
+                out += immediate[token]
+                var x = parseHex1(tokens[pos+1])
+                if (x === null) {
+                    err("invalid hex constant")
+                    return
+                }
+                out += hex1(x)
+            }
+            else if (token == 'cal') {
+                if (pos + 1 >= tokens.length || !(tokens[pos+1].toLowerCase() in extended)) {
+                    err("CAL needs valid extended code")
+                    return
+                }
+                out += "E" + extended[tokens[pos+1].toLowerCase()]
+            }
+            else if (token == 'jump') {
+                if (pos + 1 >= tokens.length) {
+                    err("JUMP needs target")
+                    return
+                }
+                target = tokens[pos+1]
+                out += "F"
+                var targetPos
+                if (target[0] == '#') {
+                    targetPos = parseHex2(target.substr(1))
+                    if (targetPos === null) {
+                        err("Invalid hex constant")
                         return
                     }
-                    out += "8"
-                    var x = parseHex1(tokens[pos+1])
-                    if (x === null) {
-                        err("invalid hex constant")
-                        return
-                    }
-                    out += hex1(x)
-                    break
-                case "aia":
-                    if (pos + 1 >= tokens.length) {
-                        err("AIA needs value")
-                        return
-                    }
-                    out += "9"
-                    var x = parseHex1(tokens[pos+1])
-                    if (x === null) {
-                        err("invalid hex constant")
-                        return
-                    }
-                    out += hex1(x)
-                    break
-                case "tiy":
-                    if (pos + 1 >= tokens.length) {
-                        err("TIY needs value")
-                        return
-                    }
-                    out += "A"
-                    var x = parseHex1(tokens[pos+1])
-                    if (x === null) {
-                        err("invalid hex constant")
-                        return
-                    }
-                    out += hex1(x)
-                    break
-                case "aiy":
-                    if (pos + 1 >= tokens.length) {
-                        err("TIY needs value")
-                        return
-                    }
-                    out += "B"
-                    var x = parseHex1(tokens[pos+1])
-                    if (x === null) {
-                        err("invalid hex constant")
-                        return
-                    }
-                    out += hex1(x)
-                    break
-                case "cia":
-                    if (pos + 1 >= tokens.length) {
-                        err("CIA needs value")
-                        return
-                    }
-                    out += "C"
-                    var x = parseHex1(tokens[pos+1])
-                    if (x === null) {
-                        err("invalid hex constant")
-                        return
-                    }
-                    out += hex1(x)
-                    break
-                case "ciy":
-                    if (pos + 1 >= tokens.length) {
-                        err("CIY needs value")
-                        return
-                    }
-                    out += "D"
-                    var x = parseHex1(tokens[pos+1])
-                    if (x === null) {
-                        err("invalid hex constant")
-                        return
-                    }
-                    out += hex1(x)
-                    break
-                case "cal":
-                    if (pos + 1 >= tokens.length || !(tokens[pos+1].toLowerCase() in extended)) {
-                        err("CAL needs valid extended code")
-                        return
-                    }
-                    out += "E" + extended[tokens[pos+1].toLowerCase()]
-                    break
-                case "jump": 
-                    if (pos + 1 >= tokens.length) {
-                        err("JUMP needs target")
-                        return
-                    }
-                    target = tokens[pos+1]
-                    out += "F"
-                    var targetPos
-                    if (target[0] == '#') {
-                        targetPos = parseHex2(target.substr(1))
-                        if (targetPos === null) {
-                            alert("Invalid hex constant")
-                            return
-                        }
-                    }
-                    else {
-                        if (target in labels) {
-                            if ("target" in labels[target]) {
-                                targetPos = labels[target].target
-                            }
-                            else {
-                                targetPos = parseHex2(target)
-                                labels[target].refs.push(out.length)
-                            }
+                }
+                else {
+                    if (target in labels) {
+                        if ("target" in labels[target]) {
+                            targetPos = labels[target].target
                         }
                         else {
                             targetPos = parseHex2(target)
-                            labels[target] = { refs: [out.length] }
+                            labels[target].refs.push(out.length)
                         }
                     }
-                    out += hex2(targetPos===null?0:targetPos)
-                    break;
-                default:
-                    if (token in extended) {
-                        out += "E" + extended[token]
-                        break
+                    else {
+                        targetPos = parseHex2(target)
+                        labels[target] = { refs: [out.length] }
                     }
-                    err("unrecognized opcode")
-                    return
+                }
+                out += hex2(targetPos===null?0:targetPos)
+            }
+            else if (token == 'data') {
+                var data = tokens.slice(pos+1).join(" ").split(/\s*,?\s*|\s+/)
+                for (var j=0; j<data.length; j++) {
+                    var h = parseHex1(data[j])
+                    if (h===null) {
+                        err("unrecognized hex constant")
+                        return
+                    }
+                    out += hex1(h)
+                }
+            }
+            else if (token in extended) {
+                out += "E" + extended[token]
+                break
+            }
+            else {
+                err("unrecognized opcode")
+                return
             }
         }
     }
@@ -303,8 +231,139 @@ function assemble(input, output) {
     output.select()
 }
 
-function go() {
+function find(value, dict) {
+    for (var key in dict) {
+        if (dict.hasOwnProperty(key) && dict[key] == value)
+            return key
+    }
+    return null
+}
+
+function disassemble(mc, source) {
+    var code = mc.replace(/[\s,]/,'').trim().toUpperCase()
+    var pos = 0
+    var out = ""
+    var labels = {}
+    function getLabel(x) {
+        if (x in labels) 
+            return labels[x]
+        else
+            return '#'+hex2(x)
+    }
+    while(pos < code.length) {
+        if (null == parseHex1(code[pos],strict=true)) {
+            alert("Invalid hex digit")
+            return
+        }
+        if (code[pos] == 'E') {
+            pos+=2
+        }
+        else if (code[pos] == 'F') {
+            if (pos + 2 < code.length) {
+                target = parseHex2(code.substr(pos+1,2))
+                if (target <= code.length && !(target in labels)) 
+                    labels[target] = 'lbl'+Object.getOwnPropertyNames(labels).length
+            }
+            pos+=3
+        }
+        else {
+            pos++
+        }
+    }
+    pos = 0
+    while(pos < code.length) {
+        if (pos in labels) {
+            out += labels[pos]+":\n"
+        }
+        var instruction = null
+        var length = 0
+        if (code[pos] == 'E') {
+            if (pos + 1 < code.length) {
+                var ext = find(code[pos+1], extended)
+                if ((pos + 1) in labels) {
+                    out += "  DATA E\n" +
+                           labels[pos+1]+":\n" +
+                           "  DATA " + code[pos+1]
+                    if (ext !== null)
+                        out += ' ; CAL '+ext.toUpperCase()
+                    out += '\n'
+                }
+                else {
+                    if (ext !== null)
+                        out += '  CAL '+ext.toUpperCase()+'\n'
+                    else
+                        out += '  DATA E,'+code[pos+1]+'\n'
+                }
+            }
+            else {
+                out += '  DATA E\n'
+            }
+            pos+=2
+        }
+        else if (code[pos] == 'F') {
+            if (pos + 2 < code.length) {
+                if ((pos+1) in labels || (pos+2) in labels) {
+                    out += "  DATA F\n"
+                    if ((pos+1) in labels) 
+                        out += labels[pos+1]+":\n" 
+                    out += "  DATA " + code[pos+1] + "\n"
+                    if ((pos+2) in labels) 
+                        out += labels[pos+2]+":\n"
+                    out += "  DATA " + code[pos+2] +" ; JUMP " + getLabel(parseHex2(code.substr(pos+1,2))) + "\n"
+                }
+                else {
+                    out += "  JUMP " + getLabel(parseHex2(code.substr(pos+1,2))) + "\n"
+                }
+            }
+            else if (pos + 1 < code.length) {
+                out += "  DATA F\n"
+                if ((pos+1) in labels) 
+                    out += labels[pos+1]+":\n" 
+                out += "  DATA " + code[pos+1] + "\n"
+            }
+            else {
+                out += "  DATA F\n"
+            }
+            pos += 3
+        }
+        else {
+            var op = find(code[pos], immediate) 
+            if (op != null) {
+                if (pos + 1 >= code.length) {
+                    out += "  DATA "+code[pos]
+                }
+                else {
+                    instruction = op.toUpperCase()+" "+code[pos+1]
+                    if ((pos+1) in labels) {
+                        out += "  DATA "+code[pos]+"\n"+labels[pos+1]+":\n  DATA "+code[pos+1]+" ; "+instruction+"\n"
+                    }
+                    else {
+                        out += "  " + instruction+"\n"
+                    }
+                }
+                pos += 2
+            }
+            else {
+                out += "  " + find(code[pos], noArgs).toUpperCase() + "\n"
+                pos++
+            }
+        }
+    }
+    if (code.length in labels) 
+        out += labels[code.length] + ":\n"
+    source.value=out
+}
+
+function assembleIt() {
     assemble(document.getElementById('source').value, document.getElementById('mc'))
+}
+
+function disassembleIt() {
+    if (document.getElementById('source').value.length) {
+        if (!confirm("Clear assembly source?"))
+            return
+    }
+    disassemble(document.getElementById('mc').value, document.getElementById('source'))
 }
 </script>
 </html>
