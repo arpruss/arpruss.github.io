@@ -553,6 +553,8 @@ class Emulator {
       });
     } else {
       this.keyFuncs["Shift"] = this.setJoypSelect.bind(this);
+      this.keyFuncs["h"] = this.setJoypSelect.bind(this);
+      this.keyFuncs["n"] = this.setJoypSelect.bind(this);
     }
 
     this.boundKeyDown = this.keyDown.bind(this);
