@@ -1,9 +1,9 @@
 <html>
-<title>Timer Generator</title>
+<title>Timer Video Generator</title>
 <body>
-<h1>Timer Generator</h1>
+<h1>Timer Video Generator (WEBP Animation)</h1>
 
-<form onSubmit="return run();">
+<form onSubmit="return run(false);">
 <label for="font">Font:</label>
 <select name="font" id="font">
   <option value="Andale Mono">Andale Mono</option>
@@ -26,18 +26,46 @@
   <option value="Trebuchet MS">Trebuchet MS</option>
   <option value="Verdana">Verdana</option>
 </select>
+
 <label for="size">Size:</label>
 <input type="number" id="size" min="4" max="400" value="30"/>
 <br/>
 <label for="start">Start:</label>
-<input type="text" id="start" value="00:00.0"/>
+<input type="text" id="start" value="00:00"/>
 <br/>
 <label for="end">End:</label>
-<input type="text" id="end" value="01:00.0"/>
+<input type="text" id="end" value="01:00"/>
 <br/>
+<input type="checkbox" id="tenths" checked/>
+<label for="tenths">Show tenths of a second</id>
+<br/>
+<label for="line0">Line 1:</label>
+<select name="line0" id="line0" onchange="changedLineOption(0)">
+  <option value="static">Static text</option>
+  <option value="timer" selected>Timer</option>
+  <option value="timedtext">Timed text</option>
+</select>
+<br/>
+<input type="text" id="static0" value="" placeholder="Static text" hidden="true"/>
+<textarea id="timed0" name="text" rows="10" cols="60" placeholder="00:00 Start" hidden="true"></textarea>
+<br/>
+<label for="line1">Line 2:</label>
+<select name="line1" id="line1" onchange="changedLineOption(1)">
+  <option value="none" selected>None</option>
+  <option value="static">Static text</option>
+  <option value="timer">Timer</option>
+  <option value="timedtext">Timed text</option>
+</select>
+<br/>
+<input type="text" id="static1" value="" placeholder="Static text" hidden="true"/>
+<textarea id="timed1" name="text" rows="10" cols="60" placeholder="00:00 Start" hidden="true" ></textarea>
+<br/>
+<button type="button" disabled="true" id="preview" onClick="run(true);">Preview</button>
 <button type="submit" disabled="true" id="go">Go!</button>
 
 </form>
+<br/>
+<br/>
 
 <canvas id="myCanvas" width="400" height="200"></canvas>
 
@@ -47,6 +75,7 @@
 var xMux = WebPXMux("https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/dist/webpxmux.wasm");
     xMux.waitRuntime().then(function () {
     document.getElementById("go").disabled = false;
+    document.getElementById("preview").disabled = false;
     }); 
 
     
@@ -176,59 +205,62 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function parseTime(s) {
+function parseTime(s,tenths) {
     var sign = 1;
     if (s[0] == '-') {
         sign = -1;
         s = s.substr(1);
     }
-    var v = s.split(":");
-    if (v.length == 1) {
-        return sign * parseFloat(v[0]);
+    
+    var t = 0;
+    var mul = 1;
+
+    var x = s.split(".");
+    if (tenths) {
+        if (x.length > 1)
+            t = parseInt(x[1][0]);
+        mul = 10;
     }
-    else if (v.length == 2) {
-        return sign * (parseInt(v[0]) * 60 + parseFloat(v[1]));
+    
+    var v = x[0].split(":");
+    for (var i = v.length - 1 ; i >= 0 ; i--) {
+        t += mul * parseInt(v[i]);
+        mul *= 60;
     }
-    else if (v.length == 3) {
-        return sign * (parseInt(v[0]) * 3600 + parseInt(v[0]) * 60 + parseFloat(v[1]));
-    }
-    else {
-        return 0;
-    }
+    return sign * t;
 }
 
-function formatTime(t) {
+function formatTime(t, tenths) {
     var neg = false;
     if (t<0) {
         neg = true;
         t = -t;
     }
-//    h = Math.floor(t / 3600);
-//    t -= h * 3600;
-    t += .00001; // a bit of rounding? TODO
-    m = Math.floor(t / 60);
-    t -= m * 60;
-    s = Math.floor(t);
-    tenths = Math.floor( (t % 1) * 10 );
-    return (neg ? "-" : "") + m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + "." + tenths.toString();
+    var decimal = "";
+    if (tenths) {
+        decimal = "."+(t%10).toString();
+        t = (t/10) >> 0;
+    }
+    s = t % 60;
+    m = ( (t / 60) >> 0 );
+//    h = (t / 3600) >> 0;
+    return (neg ? "-" : "") + m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + decimal;
 }
 
-async function generateVP8s() {
-  var buffer = new Uint8Array(1024*1024*1024);
-  var bufferPos = 12 /* file header */ + 18 /* VP8X */ + 14 /* ANIM */;
-  
+async function generate(preview) {
+  const tenths = document.getElementById("tenths").checked;
+  const frameTime = tenths ? 100 : 1000; // milliseconds
   var canvas = document.getElementById("myCanvas");  
   var ctx = canvas.getContext("2d", { willReadFrequently: true });
-  var frameTime = 100; // milliseconds
   var font = ""+document.getElementById("size").value+"px " + document.getElementById("font").value;
-  var start = parseTime(document.getElementById("start").value);
-  var end = parseTime(document.getElementById("end").value);
+  var start = parseTime(document.getElementById("start").value, tenths);
+  var end = parseTime(document.getElementById("end").value, tenths);
   
-  var m = ctx.measureText(formatTime(start));
+  var m = ctx.measureText(formatTime(start, tenths));
   var width = m.width;
   var height = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
   ctx.font = font;
-  m = ctx.measureText(formatTime(end));
+  m = ctx.measureText(formatTime(end, tenths));
   console.log(m);
   width = Math.max(m.width,width);
   height = Math.max(m.fontBoundingBoxAscent + m.fontBoundingBoxDescent,height);
@@ -241,17 +273,26 @@ async function generateVP8s() {
   console.log(width,height);
   ctx = canvas.getContext("2d", { willReadFrequently: true });
   ctx.font = font;
+
+  var buffer;
+  var bufferPos
   
-  var t = start;
+  if (! preview) {
+      var buffer = new Uint8Array(1024*1024*1024);
+      var bufferPos = 12 /* file header */ + 18 /* VP8X */ + 14 /* ANIM */;
+  }
+  
+  var t = preview ? ((end + start)/2)>>0 : start;
   var i = 0;
-  while (t <= end + 0.00001) {
+  while (t <= end) {
       ctx.fillStyle = "#E0E0E0FF";
       ctx.fillRect(0, 0, width, height);
       ctx.fillStyle = "#000080FF";
       console.log(t);
       ctx.font = font;
-      ctx.fillText(formatTime(t),margin,y);
-//      ctx.fillText("Frame "+i,0,canvas.height-10);
+      ctx.fillText(formatTime(t, tenths),margin,y);
+      if (preview)
+        return true;
       if (i%10==0) await sleep(1); // refresh
       i++;
       var myImageData = new Uint32Array(ctx.getImageData(0, 0, width, height).data.buffer);
@@ -260,18 +301,21 @@ async function generateVP8s() {
       if (length < 0)
         break;
       bufferPos += length;
-      t += frameTime / 1000.;
+      t++;
   }
   makeWebp(buffer, bufferPos, canvas.width, canvas.height, 0x000000FF/* bgColor */);
   return buffer.subarray(0,bufferPos);
 }
 
-function run() {
+function run(preview) {
     document.getElementById("go").disabled = true;
-    generateVP8s().then(
+    document.getElementById("preview").disabled = true;
+    generate(preview).then(
         function(out) {
-            downloadBlob("anim.webp",new Blob([out]));
+            if (! preview) 
+                downloadBlob("anim.webp",new Blob([out]));
             document.getElementById("go").disabled = false;
+            document.getElementById("preview").disabled = false;
         }
     );
     return false;
@@ -293,6 +337,12 @@ function run() {
 //    downloadBlob("1.webp",new Blob([r]));
 //    }
 //  );
+}
+
+function changedLineOption(line) {
+    var v = document.getElementById("line"+line).value;
+    document.getElementById("static"+line).hidden = v != "static";
+    document.getElementById("timed"+line).hidden = v != "timedtext";
 }
 </script>    
     </body>
