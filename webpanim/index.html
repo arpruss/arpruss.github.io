@@ -223,21 +223,40 @@ async function generateVP8s() {
   var font = ""+document.getElementById("size").value+"px " + document.getElementById("font").value;
   var start = parseTime(document.getElementById("start").value);
   var end = parseTime(document.getElementById("end").value);
+  
+  var m = ctx.measureText(formatTime(start));
+  var width = m.width;
+  var height = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
+  ctx.font = font;
+  m = ctx.measureText(formatTime(end));
+  console.log(m);
+  width = Math.max(m.width,width);
+  height = Math.max(m.fontBoundingBoxAscent + m.fontBoundingBoxDescent,height);
+  margin = Math.floor(0.1 * height);
+  var y = height - m.fontBoundingBoxDescent;
+  width = Math.floor(width + 2 * margin);
+  height = Math.floor(height + 2 * margin);
+  canvas.width = width;
+  canvas.height = height;
+  console.log(width,height);
+  ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.font = font;
+  
   var t = start;
   var i = 0;
-  while (t < end) {
+  while (t <= end + 0.00001) {
       ctx.fillStyle = "#E0E0E0FF";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.font = font;
+      ctx.fillRect(0, 0, width, height);
       ctx.fillStyle = "#000080FF";
       console.log(t);
-      ctx.fillText(formatTime(t),0,canvas.height-5);
+      ctx.font = font;
+      ctx.fillText(formatTime(t),margin,y);
 //      ctx.fillText("Frame "+i,0,canvas.height-10);
       if (i%10==0) await sleep(1); // refresh
       i++;
-      var myImageData = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
+      var myImageData = new Uint32Array(ctx.getImageData(0, 0, width, height).data.buffer);
       var vp8 = await getVP8(canvas.width,canvas.height,myImageData);
-      var length = putANMF(buffer, bufferPos, canvas.width, canvas.height, frameTime, vp8);
+      var length = putANMF(buffer, bufferPos, width, height, frameTime, vp8);
       if (length < 0)
         break;
       bufferPos += length;
