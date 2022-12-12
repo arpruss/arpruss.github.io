@@ -2,16 +2,54 @@
 <title>Timer Generator</title>
 <body>
 <h1>Timer Generator</h1>
+
+<form onSubmit="return run();">
+<label for="font">Font:</label>
+<select name="font" id="font">
+  <option value="Andalé Mono">Andalé Mono</option>
+  <option value="Arial Black">Arial Black</option>
+  <option value="Baskerville">Baskerville</option>
+  <option value="Bradley Hand">Bradley Hand</option>
+  <option value="Brush Script MT">Brush Script MT</option>
+  <option value="Comic Sans MS">Comic Sans MS</option>
+  <option value="Courier">Courier</option>
+  <option value="Georgia">Georgia</option>
+  <option value="Gill Sans">Gill Sans</option>
+  <option value="Helvetica" selected>Helvetica</option>
+  <option value="Impact">Impact</option>
+  <option value="Lucida">Lucida</option>
+  <option value="Luminari">Luminari</option>
+  <option value="Monaco">Monaco</option>
+  <option value="Palatino">Palatino</option>
+  <option value="Tahoma">Tahoma</option>
+  <option value="Times New Roman">Times New Roman</option>
+  <option value="Trebuchet MS">Trebuchet MS</option>
+  <option value="Verdana">Verdana</option>
+</select>
+<label for="size">Size:</label>
+<input type="number" id="size" min="4" max="100" value="30"/>
+<br/>
+<label for="start">Start:</label>
+<input type="text" id="start" value="00:00.0"/>
+<br/>
+<label for="end">End:</label>
+<input type="text" id="end" value="01:00.0"/>
+<br/>
+<button type="submit" disabled="true" id="go">Go!</button>
+
+</form>
+
 <canvas id="myCanvas" width="400" height="200"></canvas>
 
 <script src="https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/dist/webpxmux.min.js" type="text/javascript"></script>
     
 <script>
 var xMux = WebPXMux("https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/dist/webpxmux.wasm");
-xMux.waitRuntime().then(function () {
-go(xMux);
-}); 
+    xMux.waitRuntime().then(function () {
+    document.getElementById("go").disabled = false;
+    }); 
 
+    
 function downloadBlob(name,blob) {
     var link = document.createElement('a');
     document.body.appendChild(link);
@@ -70,7 +108,6 @@ function riffChunk(riffFile,chunkID) {
     while (pos + 8 < length) {
         if (read32(riffFile, pos) == chunkID) {
             chunkLen = read32(riffFile, pos + 4);
-            console.log("found");
             return riffFile.subarray(pos, pos + 8 + chunkLen);
         }
         pos = skipChunk(data,pos);
@@ -104,7 +141,7 @@ function set16(data,offset,value) {
 function putANMF(data,offset,width,height,duration,vp8Chunk) {
     length = 24 + vp8Chunk.length;
     if (offset + length > data.length)
-        throw 'Out of space!'; // TODO
+        return -1;
     set32(data,offset+0,fourCC('ANMF'));
     set32(data,offset+4,length-8);
     set24(data,offset+8,0);  // X
@@ -115,7 +152,7 @@ function putANMF(data,offset,width,height,duration,vp8Chunk) {
     data[offset+23] = 0x80|0x40; // disposal:1, blend:1
     for (var i=0;i<vp8Chunk.length; i++)
         data[offset+24+i] = vp8Chunk[i];
-    return roundup(offset+length);
+    return roundup(length);
 }
 
 function makeWebp(webp,fileSize,width,height,bgColor) {
@@ -135,36 +172,90 @@ function makeWebp(webp,fileSize,width,height,bgColor) {
     set16(webp, pos+8+4, 1); // loop count
 }
 
-async function generateVP8s(xMux) {
-  var buffer = new Uint8Array(1024*1024*1024);
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
+function parseTime(s) {
+    var sign = 1;
+    if (s[0] == '-') {
+        sign = -1;
+        s = s.substr(1);
+    }
+    var v = s.split(":");
+    if (v.length == 1) {
+        return sign * parseFloat(v[0]);
+    }
+    else if (v.length == 2) {
+        return sign * (parseInt(v[0]) * 60 + parseFloat(v[1]));
+    }
+    else if (v.length == 3) {
+        return sign * (parseInt(v[0]) * 3600 + parseInt(v[0]) * 60 + parseFloat(v[1]));
+    }
+    else {
+        return 0;
+    }
+}
+
+function formatTime(t) {
+    var neg = false;
+    if (t<0) {
+        neg = true;
+        t = -t;
+    }
+//    h = Math.floor(t / 3600);
+//    t -= h * 3600;
+    t += .00001; // a bit of rounding? TODO
+    m = Math.floor(t / 60);
+    t -= m * 60;
+    s = Math.floor(t);
+    tenths = Math.floor( (t % 1) * 10 );
+    return (neg ? "-" : "") + m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + "." + tenths.toString();
+}
+
+async function generateVP8s() {
+  var buffer = new Uint8Array(1024*1024*1024);
   var bufferPos = 12 /* file header */ + 18 /* VP8X */ + 14 /* ANIM */;
+  
   var canvas = document.getElementById("myCanvas");  
   var ctx = canvas.getContext("2d", { willReadFrequently: true });
-  var count = 10;
   var frameTime = 100; // milliseconds
-  for (var i=0;i<count;i++) {
+  var font = ""+document.getElementById("size").value+"px " + document.getElementById("font").value;
+  var start = parseTime(document.getElementById("start").value);
+  var end = parseTime(document.getElementById("end").value);
+  var t = start;
+  var i = 0;
+  while (t < end) {
       ctx.fillStyle = "#E0E0E0FF";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.font = "30px Arial";
+      ctx.font = font;
       ctx.fillStyle = "#000080FF";
-      ctx.fillText("Frame "+i,0,canvas.height-10);
+      console.log(t);
+      ctx.fillText(formatTime(t),0,canvas.height-5);
+//      ctx.fillText("Frame "+i,0,canvas.height-10);
+      if (i%10==0) await sleep(1); // refresh
+      i++;
       var myImageData = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
       var vp8 = await getVP8(canvas.width,canvas.height,myImageData);
-      bufferPos = putANMF(buffer, bufferPos, canvas.width, canvas.height, frameTime, vp8);
+      var length = putANMF(buffer, bufferPos, canvas.width, canvas.height, frameTime, vp8);
+      if (length < 0)
+        break;
+      bufferPos += length;
+      t += frameTime / 1000.;
   }
-  makeWebp(buffer, bufferPos, canvas.width, canvas.height, 0x000000FF/* bgColor */, frames);
-  console.log(bufferPos);
+  makeWebp(buffer, bufferPos, canvas.width, canvas.height, 0x000000FF/* bgColor */);
   return buffer.subarray(0,bufferPos);
 }
 
-function go(xMux) {
-    generateVP8s(xMux).then(
+function run() {
+    document.getElementById("go").disabled = true;
+    generateVP8s().then(
         function(out) {
-            console.log(out);
             downloadBlob("anim.webp",new Blob([out]));
+            document.getElementById("go").disabled = false;
         }
     );
+    return false;
 /*
     var reader = new FileReader();
     reader.onload = function () {
