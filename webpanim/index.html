@@ -71,7 +71,7 @@ function riffChunk(riffFile,chunkID) {
         if (read32(riffFile, pos) == chunkID) {
             chunkLen = read32(riffFile, pos + 4);
             console.log("found");
-            return riffFile.slice(pos, pos + 8 + chunkLen);
+            return riffFile.subarray(pos, pos + 8 + chunkLen);
         }
         pos = skipChunk(data,pos);
     }
@@ -101,29 +101,24 @@ function set16(data,offset,value) {
     data[offset+1] = value >> 8;
 }
 
-function getANMF(width,height,duration,vp8Chunk) {
+function putANMF(data,offset,width,height,duration,vp8Chunk) {
     length = 24 + vp8Chunk.length;
-    data = new Uint8Array(roundup(length));
-    set32(data,0,fourCC('ANMF'));
-    set32(data,4,length-8);
-    set24(data,8,0);  // X
-    set24(data,11,0); // Y
-    set24(data,14,width-1);
-    set24(data,17,height-1);
-    set24(data,20,duration);
-    data[23] = 0x80|0x40; // disposal:1, blend:1
+    if (offset + length > data.length)
+        throw 'Out of space!'; // TODO
+    set32(data,offset+0,fourCC('ANMF'));
+    set32(data,offset+4,length-8);
+    set24(data,offset+8,0);  // X
+    set24(data,offset+11,0); // Y
+    set24(data,offset+14,width-1);
+    set24(data,offset+17,height-1);
+    set24(data,offset+20,duration);
+    data[offset+23] = 0x80|0x40; // disposal:1, blend:1
     for (var i=0;i<vp8Chunk.length; i++)
-        data[24+i] = vp8Chunk[i];
-    return data;
+        data[offset+24+i] = vp8Chunk[i];
+    return roundup(offset+length);
 }
 
-function getWebp(width,height,bgColor,frames) {
-    fileSize = 12 /* file header */ + 18 /* VP8X */ + 14 /* ANIM */;
-    for (var i = 0 ; i < frames.length ; i++) {
-        fileSize += 6*4 + 8 + roundup(frames[i].length);
-    }
-    console.log(fileSize);
-    var webp = new Uint8Array(fileSize);
+function makeWebp(webp,fileSize,width,height,bgColor) {
     set32(webp, 0, fourCC('RIFF'));
     set32(webp, 4, fileSize - 8);
     set32(webp, 8, fourCC('WEBP'));
@@ -138,20 +133,12 @@ function getWebp(width,height,bgColor,frames) {
     set32(webp, pos+4, 14-8);
     set32(webp, pos+8, bgColor);
     set16(webp, pos+8+4, 1); // loop count
-    pos += 14;
-    for (var i = 0 ; i < frames.length ; i++) {
-        for (var j = 0 ; j < frames[i].length ; j++) {
-            webp[pos] = frames[i][j];
-            pos++;
-        }
-        if (pos % 2)
-            pos++;        
-    }
-    return webp;
 }
 
 async function generateVP8s(xMux) {
-  frames = [];
+  var buffer = new Uint8Array(1024*1024*1024);
+
+  var bufferPos = 12 /* file header */ + 18 /* VP8X */ + 14 /* ANIM */;
   var canvas = document.getElementById("myCanvas");  
   var ctx = canvas.getContext("2d", { willReadFrequently: true });
   var count = 10;
@@ -164,10 +151,11 @@ async function generateVP8s(xMux) {
       ctx.fillText("Frame "+i,0,canvas.height-10);
       var myImageData = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
       var vp8 = await getVP8(canvas.width,canvas.height,myImageData);
-      frames.push(getANMF(canvas.width, canvas.height, frameTime, vp8));
+      bufferPos = putANMF(buffer, bufferPos, canvas.width, canvas.height, frameTime, vp8);
   }
-  console.log("making webp");
-  return getWebp(canvas.width, canvas.height, 0x000000FF/* bgColor */, frames);
+  makeWebp(buffer, bufferPos, canvas.width, canvas.height, 0x000000FF/* bgColor */, frames);
+  console.log(bufferPos);
+  return buffer.subarray(0,bufferPos);
 }
 
 function go(xMux) {
