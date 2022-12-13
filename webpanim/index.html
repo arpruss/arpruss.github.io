@@ -6,6 +6,12 @@
 <form>
 <label for="font">Font:</label>
 <select name="font" id="font">
+  <option value="Hershey Sans">Hershey Sans</option>
+  <option value="Hershey SansBold">Hershey Sans Bold</option>
+  <option value="Hershey SansBoldOblique">Hershey Sans Bold Oblique</option>
+  <option value="Hershey Serif">Hershey Serif</option>
+  <option value="Hershey SerifBold">Hershey SerifBold</option>
+  <option value="Hershey SerifItalic">Hershey SerifItalic</option>
   <option value="Andale Mono">Andale Mono</option>
   <option value="Arial Black">Arial Black</option>
   <option value="Baskerville">Baskerville</option>
@@ -90,8 +96,10 @@ Back:
 
 <canvas id="myCanvas" width="400" height="200"></canvas>
 <script src="https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/dist/webpxmux.min.js" type="text/javascript"></script>
+<script src="./hershey.js" type="text/javascript"></script>
 <script>
 
+const hersheyThickness = 3;
 var output = null;
 
 var xMux = WebPXMux("https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/dist/webpxmux.wasm");
@@ -279,10 +287,13 @@ function parseTime(s,tenths) {
 }
 
 function formatTime(t, tenths) {
-    var neg = false;
     if (t<0) {
-        neg = true;
-        t = -t;
+        if (tenths) {
+            return Math.floor(t/10).toString();
+        }
+        else {
+            return t.toString();
+        }
     }
     var decimal = "";
     if (tenths) {
@@ -292,7 +303,7 @@ function formatTime(t, tenths) {
     s = t % 60;
     m = ( (t / 60) >> 0 );
 //    h = (t / 3600) >> 0;
-    return (neg ? "-" : "") + m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + decimal;
+    return m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + decimal;
 }
 
 function parseTimedText(text, tenths) {
@@ -336,7 +347,7 @@ function getText(t, tenths, lineOptions) {
   return text;
 }
 
-function lineMetrics(line, ctx, start, end, tenths) {
+function lineMetrics(line, font, start, end, tenths) {
     var texts;
     if (line.mode == "timer") {
         texts = [ formatTime(start, tenths), formatTime(((start+end)/2) >> 0, tenths), formatTime(end, tenths) ];
@@ -351,7 +362,7 @@ function lineMetrics(line, ctx, start, end, tenths) {
     }
     var metrics = { width:0, ascent:0, descent:0 };
     for (var i = 0 ; i < texts.length ; i++) {
-        var m = ctx.measureText(texts[i]);
+        var m = font.measure(texts[i]);
         metrics.width = Math.max(m.width, metrics.width);
         metrics.ascent = Math.max(m.actualBoundingBoxAscent, metrics.ascent);
         metrics.descent = Math.max(m.actualBoundingBoxDescent, metrics.descent);
@@ -376,6 +387,28 @@ function getColorNum(elt) {
       (document.getElementById(elt + "R").value<<24);
 }
 
+function getFont(ctx) {
+    const fontName = document.getElementById("font").value;
+    const fontSize = parseFloat(document.getElementById("size").value);
+    var measure;
+    var draw;
+    if (fontName.startsWith("Hershey ")) {
+        ctx.strokeStyle = getColor("text");
+        ctx.lineWidth = hersheyThickness;
+        const hersheyFont = hersheyFonts[fontName.substr(8)];
+        measure = ( (text) => hersheyMeasureString(hersheyFont,fontSize,text) );
+        draw = ( (text,x,y) => hersheyRenderString(ctx,hersheyFont,fontSize,text,x,y) );
+        
+    }
+    else {
+        ctx.font = ""+fontSize+"px "+fontName;
+        ctx.fillStyle = getColor("text");
+        measure = ( (text) => ctx.measureText(text) );
+        draw = ( (text,x,y) => ctx.fillText(text, x, y) );
+    }
+    return { measure:measure, draw:draw };
+}
+
 async function generate(preview) {
   output = [null];
  
@@ -383,7 +416,6 @@ async function generate(preview) {
   const frameTime = tenths ? 100 : 1000; // milliseconds
   const align = document.getElementById("align").value;
   
-  const fore = getColor("text");
   const back = getColor("back");
   
   var lines = [ {mode:document.getElementById("line0").value}, {mode:document.getElementById("line1").value} ];
@@ -391,8 +423,7 @@ async function generate(preview) {
   
   const canvas = document.getElementById("myCanvas");  
   var ctx = canvas.getContext("2d", { willReadFrequently: true });
-  const font = ""+document.getElementById("size").value+"px " + document.getElementById("font").value;
-  ctx.font = font;
+  var font = getFont(ctx);
   const start = parseTime(document.getElementById("start").value, tenths);
   const end = parseTime(document.getElementById("end").value, tenths);
   
@@ -401,7 +432,7 @@ async function generate(preview) {
         lines[i].timedText = parseTimedText(document.getElementById("timed"+i).value, tenths);
     else if (lines[i].mode == "static")
         lines[i].static = document.getElementById("static"+i).value;
-    lines[i].metrics = lineMetrics(lines[i], ctx, tenths);
+    lines[i].metrics = lineMetrics(lines[i], font, start, end, tenths);
   }
   
   var margin;
@@ -410,15 +441,17 @@ async function generate(preview) {
   
   var marginFrac = parseFloat(document.getElementById("margin").value);
   
+  var extraMargin = document.getElementById("font").value.startsWith("Hershey ") ? (hersheyThickness / 2)>>0 : 0;
+  
   if (numLines == 1) {
-    margin = Math.ceil(marginFrac * lines[0].metrics.height);
+    margin = extraMargin + Math.ceil(marginFrac * lines[0].metrics.height);
     width = 2 * margin + Math.ceil(lines[0].metrics.width);
     height = 2 * margin + Math.ceil(lines[0].metrics.height);
     lines[0].y = Math.floor(height - margin - lines[0].metrics.descent);
   }
   else {
     maxHeight = Math.max(lines[0].metrics.height, lines[1].metrics.height);
-    margin = Math.ceil(marginFrac * maxHeight);
+    margin = extraMargin + Math.ceil(marginFrac * maxHeight);
     width = 2 * margin + Math.ceil(Math.max(lines[0].metrics.width, lines[1].metrics.width));
     height = 3 * margin + Math.ceil(lines[0].metrics.height) + Math.ceil(lines[1].metrics.height);
     lines[0].y = Math.floor(margin + lines[0].metrics.height - lines[0].metrics.descent);
@@ -428,31 +461,30 @@ async function generate(preview) {
   canvas.width = width;
   canvas.height = height;
   ctx = canvas.getContext("2d", { willReadFrequently: true });
-  ctx.font = font;
+  var font = getFont(ctx);
 
   if (! preview) {
     var framesLength = 0;
   }
   
+  ctx.fillStyle = back;
+  
   var t = preview ? ((end + start)/2)>>0 : start;
   var i = 0;
   while (t <= end) {
-      ctx.fillStyle = back;
       ctx.clearRect(0, 0, width, height);
       ctx.fillRect(0, 0, width, height);
-      ctx.fillStyle = fore;
-      ctx.font = font;
       for (var j=0; j<numLines; j++) {
-        var text = getText(t, tenths, lines[j]);
+        const text = getText(t, tenths, lines[j]);
         if (align == "left") {
-            ctx.fillText(text, margin, lines[j].y);
+            font.draw(text, margin, lines[j].y);
         }
         else {
-            var w = ctx.measureText(text).width;
+            const w = font.measure(text).width;
             if (align == "center") 
-                ctx.fillText(text, width/2 - w/2, lines[j].y);
+                font.draw(text, width/2 - w/2, lines[j].y);
             else
-                ctx.fillText(text, width - margin - w, lines[j].y);
+                font.draw(text, width - margin - w, lines[j].y);
         }
       }
       if (preview)
