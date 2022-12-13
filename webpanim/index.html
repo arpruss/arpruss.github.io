@@ -119,7 +119,6 @@ async function downloadToDisc(header, frames) {
     await writableStream.write(new Blob([header]));
     
     for (var i = 0 ; i < frames.length ; i++) {
-        console.log(frames[i].length);
         await writableStream.write(new Blob([frames[i]]));
     }
 
@@ -306,7 +305,7 @@ function parseTimedText(text, tenths) {
     if (line) {
         var t = 0;
         var show = "";
-        const found = line.match(/(.*)\s+(.*)/);
+        const found = line.match(/([^\s]*)\s+(.*)/);
         if (found) {
             t = parseTime(found[1], tenths);
             show = found[2];
@@ -328,11 +327,11 @@ function getText(t, tenths, lineOptions) {
     return formatTime(t, tenths);
   else if (lineOptions.mode == "static")
     return lineOptions.static;
-  var text = "";
+  var text = "(empty)";
   var timedText = lineOptions.timedText;
   for (var i = 0 ; i < timedText.length ; i++) {
-    if (t >= timedText.time) 
-        text = timedText.text;
+    if (t >= timedText[i].time) 
+        text = timedText[i].text;
     else
         break;
   }
@@ -386,7 +385,6 @@ async function generate(preview) {
   
   const fore = getColor("text");
   const back = getColor("back");
-  console.log(fore,back);
   
   var lines = [ {mode:document.getElementById("line0").value}, {mode:document.getElementById("line1").value} ];
   var numLines = lines[1].mode != "none" ? lines.length : 1;
@@ -429,7 +427,6 @@ async function generate(preview) {
   
   canvas.width = width;
   canvas.height = height;
-  console.log(width,height);
   ctx = canvas.getContext("2d", { willReadFrequently: true });
   ctx.font = font;
 
@@ -448,7 +445,6 @@ async function generate(preview) {
       ctx.clearRect(0, 0, width, height);
       ctx.fillRect(0, 0, width, height);
       ctx.fillStyle = fore;
-      console.log(t);
       ctx.font = font;
       for (var j=0; j<numLines; j++) {
         var text = getText(t, tenths, lines[j]);
