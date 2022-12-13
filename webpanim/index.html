@@ -107,22 +107,27 @@ var xMux = WebPXMux("https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/d
 async function downloadToDisc(header, frames) {
     const opts = {
         types: [{
-          description: 'WEBP animation',
+          description: 'WebP animation',
           accept: {'image/webp': ['.webp']},
         }],
     };
-
-    const newHandle = await window.showSaveFilePicker(opts);
-
-    const writableStream = await newHandle.createWritable();
     
-    await writableStream.write(new Blob([header]));
-    
-    for (var i = 0 ; i < frames.length ; i++) {
-        await writableStream.write(new Blob([frames[i]]));
+    if (window.showSaveFilePicker) {
+        const newHandle = await window.showSaveFilePicker(opts);
+
+        const writableStream = await newHandle.createWritable();
+        
+        await writableStream.write(new Blob([header]));
+        
+        for (var i = 0 ; i < frames.length ; i++) {
+            await writableStream.write(new Blob([frames[i]]));
+        }
+
+        await writableStream.close();
     }
-
-    await writableStream.close();
+    else {
+        downloadBlob("animation.webp", new Blob(output));
+    }
 }
     
 function downloadBlob(name,blob) {
@@ -148,7 +153,7 @@ function downloadBlob(name,blob) {
 
 function fix32(data) {
   for (var i=0;i<data.length;i++) {
-    // in:abgr??
+    // in:abgr
     r = data[i] & 0xFF;
     g = (data[i]>>8) & 0xFF;
     b = (data[i]>>16) & 0xFF;
@@ -379,6 +384,8 @@ function getColorNum(elt) {
 }
 
 async function generate(preview) {
+  output = [null];
+ 
   const tenths = document.getElementById("tenths").checked;
   const frameTime = tenths ? 100 : 1000; // milliseconds
   const align = document.getElementById("align").value;
@@ -387,14 +394,14 @@ async function generate(preview) {
   const back = getColor("back");
   
   var lines = [ {mode:document.getElementById("line0").value}, {mode:document.getElementById("line1").value} ];
-  var numLines = lines[1].mode != "none" ? lines.length : 1;
+  const numLines = lines[1].mode != "none" ? lines.length : 1;
   
-  var canvas = document.getElementById("myCanvas");  
+  const canvas = document.getElementById("myCanvas");  
   var ctx = canvas.getContext("2d", { willReadFrequently: true });
-  var font = ""+document.getElementById("size").value+"px " + document.getElementById("font").value;
+  const font = ""+document.getElementById("size").value+"px " + document.getElementById("font").value;
   ctx.font = font;
-  var start = parseTime(document.getElementById("start").value, tenths);
-  var end = parseTime(document.getElementById("end").value, tenths);
+  const start = parseTime(document.getElementById("start").value, tenths);
+  const end = parseTime(document.getElementById("end").value, tenths);
   
   for (var i = 0 ; i < numLines ; i++) {
     if (lines[i].mode == "timedtext")
@@ -430,11 +437,7 @@ async function generate(preview) {
   ctx = canvas.getContext("2d", { willReadFrequently: true });
   ctx.font = font;
 
-  var buffer;
-  var bufferPos
-  
   if (! preview) {
-    var frames = [];
     var framesLength = 0;
   }
   
@@ -466,12 +469,11 @@ async function generate(preview) {
       var myImageData = new Uint32Array(ctx.getImageData(0, 0, width, height).data.buffer);
       var vp8 = await getVP8(canvas.width,canvas.height,myImageData);
       var frame = getANMF(width, height, frameTime, vp8);
-      frames.push( frame );
+      output.push( frame );
       framesLength += frame.length;
       t++;
   }
-  var header = makeWebpHeader(framesLength, canvas.width, canvas.height, getColorNum("back"));
-  output = [header, frames];
+  output[0] = makeWebpHeader(framesLength, width, height, getColorNum("back"));
   document.getElementById("download").hidden = false;
 }
 
@@ -479,7 +481,7 @@ function enableButtons(v) {
    document.getElementById("go").disabled = !v;
    document.getElementById("preview").disabled = !v;
    if (!v)
-    document.getElementById("download").hidden = true;
+     document.getElementById("download").hidden = true;
 }
 
 function run(preview) {
