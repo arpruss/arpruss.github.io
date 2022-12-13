@@ -246,13 +246,13 @@ function makeWebpHeader(frameSize,width,height,bgColor) {
     pos = 12; // VP8X
     set32(webp, pos, fourCC('VP8X'));
     set32(webp, pos+4, 18-8);
-    webp[pos+8] = (0x10*0) /* ALPHA */ | 0x2 /* ANIMATION */;
+    webp[pos+8] = (0x10*1) /* ALPHA */ | 0x2 /* ANIMATION */;
     set24(webp, pos+8+4, width-1);
     set24(webp, pos+8+4+3, height-1);
     pos += 8 + 4 + 3 + 3;
     set32(webp, pos, fourCC('ANIM'));
     set32(webp, pos+4, 14-8);
-    set32(webp, pos+8, bgColor);
+    set32(webp, pos+8, 0*bgColor);
     set16(webp, pos+8+4, 1); // loop count
     
     return webp;
@@ -468,7 +468,6 @@ async function generate(preview) {
     var framesLength = 0;
   }
   
-  
   var t = preview ? ((end + start)/2)>>0 : start;
   var i = 0;
   while (t <= end) {
@@ -495,7 +494,7 @@ async function generate(preview) {
       if (i%10==0) await sleep(1); // refresh
       i++;
       var myImageData = new Uint32Array(ctx.getImageData(0, 0, width, height).data.buffer);
-      var vp8 = await getVP8(canvas.width,canvas.height,myImageData);
+      var vp8 = await getVP8(width, height, myImageData);
       var frame = getANMF(width, height, frameTime, vp8);
       output.push( frame );
       framesLength += frame.length;
