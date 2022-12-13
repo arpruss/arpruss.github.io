@@ -13,6 +13,7 @@
   <option value="Hershey SerifBold">Hershey SerifBold</option>
   <option value="Hershey SerifItalic">Hershey SerifItalic</option>
   <option value="Andale Mono">Andale Mono</option>
+  <option value="Arial" selected>Arial</option>
   <option value="Arial Black">Arial Black</option>
   <option value="Baskerville">Baskerville</option>
   <option value="Bradley Hand">Bradley Hand</option>
@@ -21,7 +22,7 @@
   <option value="Courier">Courier</option>
   <option value="Georgia">Georgia</option>
   <option value="Gill Sans">Gill Sans</option>
-  <option value="Helvetica" selected>Helvetica</option>
+  <option value="Helvetica">Helvetica</option>
   <option value="Impact">Impact</option>
   <option value="Lucida">Lucida</option>
   <option value="Luminari">Luminari</option>
@@ -467,13 +468,15 @@ async function generate(preview) {
     var framesLength = 0;
   }
   
-  ctx.fillStyle = back;
   
   var t = preview ? ((end + start)/2)>>0 : start;
   var i = 0;
   while (t <= end) {
       ctx.clearRect(0, 0, width, height);
+      var saved = ctx.fillStyle;
+      ctx.fillStyle = back;
       ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = saved;
       for (var j=0; j<numLines; j++) {
         const text = getText(t, tenths, lines[j]);
         if (align == "left") {
