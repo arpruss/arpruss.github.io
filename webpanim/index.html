@@ -1,9 +1,9 @@
 <html>
 <title>Timer Video Generator</title>
 <body>
-<h1>Timer Video Generator (WEBP Animation)</h1>
+<h1>Timer Video Generator (WebP Animation)</h1>
 
-<form onSubmit="return run(false);">
+<form>
 <label for="font">Font:</label>
 <select name="font" id="font">
   <option value="Andale Mono">Andale Mono</option>
@@ -39,8 +39,21 @@
 <input type="checkbox" id="tenths" checked/>
 <label for="tenths">Show tenths of a second</id>
 <br/>
+Text: 
+<label for="textR">Red</label> <input id = "textR" type="number" min="0" max="255" value="0"/>
+<label for="textG">Green</label> <input id = "textG" type="number" min="0" max="255" value="0"/>
+<label for="textB">Blue</label> <input id = "textB" type="number" min="0" max="255" value="128"/>
+<label for="textA">Opacity</label> <input id = "textA" type="number" min="0" max="1" value="1" step="0.05"/>
+<br/>
+Back: 
+<label for="backR">Red</label> <input id = "backR" type="number" min="0" max="255" value="0"/>
+<label for="backG">Green</label> <input id = "backG" type="number" min="0" max="255" value="0"/>
+<label for="backB">Blue</label> <input id = "backB" type="number" min="0" max="255" value="0"/>
+<label for="backA">Opacity</label> <input id = "backA" type="number" min="0" max="1" value="0.5" step="0.05"/>
+<br/>
+
 <label for="margin">Margin fraction:</id>
-<input type="number" min="0" max="2" value="0.1" id="margin"/>
+<input type="number" min="0" max="2" value="0.1" step="0.05" id="margin"/>
 <br/>
 <select name="align" id="align">
   <option value="left">Left</option>
@@ -70,8 +83,9 @@
 <textarea id="timed1" name="text" rows="10" cols="60" placeholder="00:00 Start" hidden="true" ></textarea>
 <br/>
 <button type="button" disabled="true" id="preview" onClick="run(true);">Preview</button>
-<button type="submit" disabled="true" id="go">Go!</button>
-
+<button type="button" disabled="true" id="go" onClick="run(false);">Generate!</button>
+<br/>
+<button type="button" hidden="true" id="download" onClick="downloadToDisc(output[0],output[1])">Download WebP file</button>
 </form>
 <br/>
 <br/>
@@ -80,11 +94,14 @@
 
 <script src="https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/dist/webpxmux.min.js" type="text/javascript"></script>
     
+
 <script>
+
+var output = null;
+
 var xMux = WebPXMux("https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/dist/webpxmux.wasm");
     xMux.waitRuntime().then(function () {
-    document.getElementById("go").disabled = false;
-    document.getElementById("preview").disabled = false;
+    enableButtons(true);
     }); 
 
 async function downloadToDisc(header, frames) {
@@ -169,7 +186,7 @@ function riffChunk(riffFile,chunkID) {
             chunkLen = read32(riffFile, pos + 4);
             return riffFile.subarray(pos, pos + 8 + chunkLen);
         }
-        pos = skipChunk(data,pos);
+        pos = skipChunk(riffFile,pos);
     }
     return null;
 }
@@ -346,10 +363,30 @@ function lineMetrics(line, ctx, start, end, tenths) {
     return metrics;
 }
 
+function getColor(elt) {
+  return "rgba("+
+      document.getElementById(elt + "R").value+","+
+      document.getElementById(elt + "G").value+","+
+      document.getElementById(elt + "B").value+","+
+      document.getElementById(elt + "A").value+")";
+}
+
+function getColorNum(elt) {
+  return 
+      Math.floor(document.getElementById(elt + "A").value*255) | 
+      (document.getElementById(elt + "B").value<<8)|
+      (document.getElementById(elt + "G").value<<16)|
+      (document.getElementById(elt + "R").value<<24);
+}
+
 async function generate(preview) {
   const tenths = document.getElementById("tenths").checked;
   const frameTime = tenths ? 100 : 1000; // milliseconds
   const align = document.getElementById("align").value;
+  
+  const fore = getColor("text");
+  const back = getColor("back");
+  console.log(fore,back);
   
   var lines = [ {mode:document.getElementById("line0").value}, {mode:document.getElementById("line1").value} ];
   var numLines = lines[1].mode != "none" ? lines.length : 1;
@@ -407,9 +444,10 @@ async function generate(preview) {
   var t = preview ? ((end + start)/2)>>0 : start;
   var i = 0;
   while (t <= end) {
-      ctx.fillStyle = "#E0E0E0FF";
+      ctx.fillStyle = back;
+      ctx.clearRect(0, 0, width, height);
       ctx.fillRect(0, 0, width, height);
-      ctx.fillStyle = "#000080FF";
+      ctx.fillStyle = fore;
       console.log(t);
       ctx.font = font;
       for (var j=0; j<numLines; j++) {
@@ -426,7 +464,7 @@ async function generate(preview) {
         }
       }
       if (preview)
-        return true;
+        return null;
       if (i%10==0) await sleep(1); // refresh
       i++;
       var myImageData = new Uint32Array(ctx.getImageData(0, 0, width, height).data.buffer);
@@ -436,13 +474,16 @@ async function generate(preview) {
       framesLength += frame.length;
       t++;
   }
-  var header = makeWebpHeader(framesLength, canvas.width, canvas.height, 0x000000FF/* bgColor */);
-  await downloadToDisc( header, frames );
+  var header = makeWebpHeader(framesLength, canvas.width, canvas.height, getColorNum("back"));
+  output = [header, frames];
+  document.getElementById("download").hidden = false;
 }
 
 function enableButtons(v) {
    document.getElementById("go").disabled = !v;
    document.getElementById("preview").disabled = !v;
+   if (!v)
+    document.getElementById("download").hidden = true;
 }
 
 function run(preview) {
