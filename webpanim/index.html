@@ -190,7 +190,7 @@ function riffChunk(riffFile,chunkID) {
     while (pos + 8 < length) {
         if (read32(riffFile, pos) == chunkID) {
             chunkLen = read32(riffFile, pos + 4);
-            return riffFile.subarray(pos, pos + 8 + chunkLen);
+            return riffFile.subarray(pos, pos + 8 + roundup(chunkLen));
         }
         pos = skipChunk(riffFile,pos);
     }
@@ -199,7 +199,15 @@ function riffChunk(riffFile,chunkID) {
 
 async function getVP8(width,height,imageData) {
     fix32(imageData);
-    return riffChunk(await xMux.encodeWebP({width:width,height:height,rgba:imageData}), fourCC('VP8 '));
+    const encoded = await xMux.encodeWebP({width:width,height:height,rgba:imageData});
+    const vp8 = riffChunk(encoded, fourCC('VP8 '));
+    const alph = riffChunk(encoded, fourCC('ALPH'));
+    if (! alph)
+        return vp8;
+    var array = new Uint8Array(vp8.length+alph.length);
+    array.set(alph);
+    array.set(vp8,alph.length);
+    return array;
 }
 
 function set32(data,offset,value) {
@@ -230,9 +238,8 @@ function getANMF(width,height,duration,vp8Chunk) {
     set24(data,14,width-1);
     set24(data,17,height-1);
     set24(data,20,duration);
-    data[23] = 0x80|0x40; // disposal:1, blend:1
-    for (var i=0;i<vp8Chunk.length; i++)
-        data[24+i] = vp8Chunk[i];
+    data[23] = (1*0)|(2*0); // disposal:1, blend:1
+    data.set(vp8Chunk, 24);
     return data;
 }
 
@@ -252,7 +259,8 @@ function makeWebpHeader(frameSize,width,height,bgColor) {
     pos += 8 + 4 + 3 + 3;
     set32(webp, pos, fourCC('ANIM'));
     set32(webp, pos+4, 14-8);
-    set32(webp, pos+8, 0*bgColor);
+    set32(webp, pos+8, bgColor);
+    console.log(bgColor);
     set16(webp, pos+8+4, 1); // loop count
     
     return webp;
@@ -380,12 +388,11 @@ function getColor(elt) {
       document.getElementById(elt + "A").value+")";
 }
 
-function getColorNum(elt) {
-  return 
-      Math.floor(document.getElementById(elt + "A").value*255) | 
-      (document.getElementById(elt + "B").value<<8)|
-      (document.getElementById(elt + "G").value<<16)|
-      (document.getElementById(elt + "R").value<<24);
+function getARGB(elt) {
+    return (document.getElementById(elt + "B").value) | 
+      (document.getElementById(elt + "G").value<<8)|
+      (document.getElementById(elt + "R").value<<16)|
+      (Math.floor(255*document.getElementById(elt + "A").value)<<24);
 }
 
 function getFont(ctx) {
@@ -500,7 +507,7 @@ async function generate(preview) {
       framesLength += frame.length;
       t++;
   }
-  output[0] = makeWebpHeader(framesLength, width, height, getColorNum("back"));
+  output[0] = makeWebpHeader(framesLength, width, height, getARGB("back"));
   const d = document.getElementById("downloadtext");
   d.textContent = ""+(framesLength+output[0].length)+" bytes";
   document.getElementById("downloadpara").hidden = false;
