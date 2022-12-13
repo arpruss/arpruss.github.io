@@ -39,6 +39,12 @@
 <input type="checkbox" id="tenths" checked/>
 <label for="tenths">Show tenths of a second</id>
 <br/>
+<select name="align" id="align">
+  <option value="left">Left</option>
+  <option value="right">Right</option>
+  <option value="center" selected>Center</option>
+</select>
+<br/>
 <label for="line0">Line 1:</label>
 <select name="line0" id="line0" onchange="changedLineOption(0)">
   <option value="static">Static text</option>
@@ -78,6 +84,30 @@ var xMux = WebPXMux("https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/d
     document.getElementById("preview").disabled = false;
     }); 
 
+async function downloadToDisc(header, frames) {
+    const opts = {
+    types: [{
+      description: 'WEBP animation',
+      accept: {'image/webp': ['.webp']},
+    }],
+  };
+
+    const newHandle = await window.showSaveFilePicker(opts);
+
+    // create a FileSystemWritableFileStream to write to
+    const writableStream = await newHandle.createWritable();
+    
+    // write our file
+    await writableStream.write(new Blob([header]));
+    
+    for (var i = 0 ; i < frames.length ; i++) {
+        console.log(frames[i].length);
+        await writableStream.write(new Blob([frames[i]]));
+    }
+
+    // close the file and write the contents to disk.
+    await writableStream.close();
+}
     
 function downloadBlob(name,blob) {
     var link = document.createElement('a');
@@ -167,24 +197,26 @@ function set16(data,offset,value) {
     data[offset+1] = value >> 8;
 }
 
-function putANMF(data,offset,width,height,duration,vp8Chunk) {
+function getANMF(width,height,duration,vp8Chunk) {
     length = 24 + vp8Chunk.length;
-    if (offset + length > data.length)
-        return -1;
-    set32(data,offset+0,fourCC('ANMF'));
-    set32(data,offset+4,length-8);
-    set24(data,offset+8,0);  // X
-    set24(data,offset+11,0); // Y
-    set24(data,offset+14,width-1);
-    set24(data,offset+17,height-1);
-    set24(data,offset+20,duration);
-    data[offset+23] = 0x80|0x40; // disposal:1, blend:1
+    data = new Uint8Array(roundup(length));
+    set32(data,0,fourCC('ANMF'));
+    set32(data,4,length-8);
+    set24(data,8,0);  // X
+    set24(data,11,0); // Y
+    set24(data,14,width-1);
+    set24(data,17,height-1);
+    set24(data,20,duration);
+    data[23] = 0x80|0x40; // disposal:1, blend:1
     for (var i=0;i<vp8Chunk.length; i++)
-        data[offset+24+i] = vp8Chunk[i];
-    return roundup(length);
+        data[24+i] = vp8Chunk[i];
+    return data;
 }
 
-function makeWebp(webp,fileSize,width,height,bgColor) {
+function makeWebpHeader(frameSize,width,height,bgColor) {
+    var fileSize = frameSize + 12 /* file header */ + 18 /* VP8X */ + 14 /* ANIM */;
+    var webp = new Uint8Array(12 /* file header */ + 18 /* VP8X */ + 14 /* ANIM */);
+
     set32(webp, 0, fourCC('RIFF'));
     set32(webp, 4, fileSize - 8);
     set32(webp, 8, fourCC('WEBP'));
@@ -199,6 +231,8 @@ function makeWebp(webp,fileSize,width,height,bgColor) {
     set32(webp, pos+4, 14-8);
     set32(webp, pos+8, bgColor);
     set16(webp, pos+8+4, 1); // loop count
+    
+    return webp;
 }
 
 function sleep(ms) {
@@ -247,9 +281,61 @@ function formatTime(t, tenths) {
     return (neg ? "-" : "") + m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + decimal;
 }
 
+function parseTimedText(text, tenths) {
+  timedText = [];
+  lines = text.split(/\r?\n/);
+  for (var i = 0 ; i < lines.length ; i++) {
+    var line = lines[i].trim();
+    if (line) {
+        var t = 0;
+        var show = "";
+        const found = line.match(/(.*)\s+(.*)/);
+        if (found) {
+            t = parseTime(found[1], tenths);
+            show = found[2];
+        }
+        else {
+            t = parseTime(line, tenths);
+        }
+        timedText.push( { "time": t, "text": show } );
+    }
+  }
+  timedText.sort((a,b) => a.time - b.time);
+  return timedText;
+}
+
+function getText(t, tenths, lineOptions) {
+  if (lineOptions.mode == "none")
+    return "";
+  else if (lineOptions.mode == "timer")
+    return formatTime(t, tenths);
+  else if (lineOptions.mode == "static")
+    return lineOptions.static;
+  var text = "";
+  var timedText = lineOptions.timedText;
+  for (var i = 0 ; i < timedText.length ; i++) {
+    if (t >= timedText.time) 
+        text = timedText.text;
+    else
+        break;
+  }
+  return text;
+}
+
 async function generate(preview) {
   const tenths = document.getElementById("tenths").checked;
   const frameTime = tenths ? 100 : 1000; // milliseconds
+  
+  var lines = [ {mode:document.getElementById("line0").value}, {mode:document.getElementById("line1").value} ];
+  var numLines = lines[1].mode != "none" ? lines.length : 1;
+  
+  for (var i = 0 ; i < numLines ; i++) {
+    if (lines[i].mode == "timedtext")
+        lines[i].timedText = parseTimedText(document.getElementById("timed"+0).value, tenths);
+    else if (lines[i].mode == "static")
+        lines[i].static = document.getElementById("static"+0).value;
+  }
+  
   var canvas = document.getElementById("myCanvas");  
   var ctx = canvas.getContext("2d", { willReadFrequently: true });
   var font = ""+document.getElementById("size").value+"px " + document.getElementById("font").value;
@@ -278,8 +364,8 @@ async function generate(preview) {
   var bufferPos
   
   if (! preview) {
-      var buffer = new Uint8Array(1024*1024*1024);
-      var bufferPos = 12 /* file header */ + 18 /* VP8X */ + 14 /* ANIM */;
+    var frames = [];
+    var framesLength = 0;
   }
   
   var t = preview ? ((end + start)/2)>>0 : start;
@@ -297,27 +383,28 @@ async function generate(preview) {
       i++;
       var myImageData = new Uint32Array(ctx.getImageData(0, 0, width, height).data.buffer);
       var vp8 = await getVP8(canvas.width,canvas.height,myImageData);
-      var length = putANMF(buffer, bufferPos, width, height, frameTime, vp8);
-      if (length < 0)
-        break;
-      bufferPos += length;
+      var frame =  getANMF(width, height, frameTime, vp8);
+      frames.push( frame );
+      framesLength += frame.length;
       t++;
   }
-  makeWebp(buffer, bufferPos, canvas.width, canvas.height, 0x000000FF/* bgColor */);
-  return buffer.subarray(0,bufferPos);
+  var header = makeWebpHeader(framesLength, canvas.width, canvas.height, 0x000000FF/* bgColor */);
+  await downloadToDisc( header, frames );
+}
+
+function enableButtons(v) {
+   document.getElementById("go").disabled = !v;
+   document.getElementById("preview").disabled = !v;
 }
 
 function run(preview) {
-    document.getElementById("go").disabled = true;
-    document.getElementById("preview").disabled = true;
+    enableButtons(false);
     generate(preview).then(
-        function(out) {
-            if (! preview) 
-                downloadBlob("anim.webp",new Blob([out]));
-            document.getElementById("go").disabled = false;
-            document.getElementById("preview").disabled = false;
+        function() {
+            enableButtons(true);
         }
-    );
+    )
+    .catch(err => { console.log(err); enableButtons(true); });
     return false;
 /*
     var reader = new FileReader();
