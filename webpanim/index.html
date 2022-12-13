@@ -39,6 +39,9 @@
 <input type="checkbox" id="tenths" checked/>
 <label for="tenths">Show tenths of a second</id>
 <br/>
+<label for="margin">Margin fraction:</id>
+<input type="number" min="0" max="2" value="0.1" id="margin"/>
+<br/>
 <select name="align" id="align">
   <option value="left">Left</option>
   <option value="right">Right</option>
@@ -86,18 +89,16 @@ var xMux = WebPXMux("https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/d
 
 async function downloadToDisc(header, frames) {
     const opts = {
-    types: [{
-      description: 'WEBP animation',
-      accept: {'image/webp': ['.webp']},
-    }],
-  };
+        types: [{
+          description: 'WEBP animation',
+          accept: {'image/webp': ['.webp']},
+        }],
+    };
 
     const newHandle = await window.showSaveFilePicker(opts);
 
-    // create a FileSystemWritableFileStream to write to
     const writableStream = await newHandle.createWritable();
     
-    // write our file
     await writableStream.write(new Blob([header]));
     
     for (var i = 0 ; i < frames.length ; i++) {
@@ -105,7 +106,6 @@ async function downloadToDisc(header, frames) {
         await writableStream.write(new Blob([frames[i]]));
     }
 
-    // close the file and write the contents to disk.
     await writableStream.close();
 }
     
@@ -322,38 +322,74 @@ function getText(t, tenths, lineOptions) {
   return text;
 }
 
+function lineMetrics(line, ctx, start, end, tenths) {
+    var texts;
+    if (line.mode == "timer") {
+        texts = [ formatTime(start, tenths), formatTime(((start+end)/2) >> 0, tenths), formatTime(end, tenths) ];
+    }
+    else if (line.mode == "static") {
+        texts = [ line.static ];
+    }
+    else if (line.mode == "timedtext") {
+        texts = [];
+        for (var i = 0 ; i < line.timedText.length ; i++)
+            texts.push(line.timedText[i].text);
+    }
+    var metrics = { width:0, ascent:0, descent:0 };
+    for (var i = 0 ; i < texts.length ; i++) {
+        var m = ctx.measureText(texts[i]);
+        metrics.width = Math.max(m.width, metrics.width);
+        metrics.ascent = Math.max(m.actualBoundingBoxAscent, metrics.ascent);
+        metrics.descent = Math.max(m.actualBoundingBoxDescent, metrics.descent);
+    }
+    metrics.height = metrics.ascent + metrics.descent;
+    return metrics;
+}
+
 async function generate(preview) {
   const tenths = document.getElementById("tenths").checked;
   const frameTime = tenths ? 100 : 1000; // milliseconds
+  const align = document.getElementById("align").value;
   
   var lines = [ {mode:document.getElementById("line0").value}, {mode:document.getElementById("line1").value} ];
   var numLines = lines[1].mode != "none" ? lines.length : 1;
   
-  for (var i = 0 ; i < numLines ; i++) {
-    if (lines[i].mode == "timedtext")
-        lines[i].timedText = parseTimedText(document.getElementById("timed"+0).value, tenths);
-    else if (lines[i].mode == "static")
-        lines[i].static = document.getElementById("static"+0).value;
-  }
-  
   var canvas = document.getElementById("myCanvas");  
   var ctx = canvas.getContext("2d", { willReadFrequently: true });
   var font = ""+document.getElementById("size").value+"px " + document.getElementById("font").value;
+  ctx.font = font;
   var start = parseTime(document.getElementById("start").value, tenths);
   var end = parseTime(document.getElementById("end").value, tenths);
   
-  var m = ctx.measureText(formatTime(start, tenths));
-  var width = m.width;
-  var height = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
-  ctx.font = font;
-  m = ctx.measureText(formatTime(end, tenths));
-  console.log(m);
-  width = Math.max(m.width,width);
-  height = Math.max(m.fontBoundingBoxAscent + m.fontBoundingBoxDescent,height);
-  margin = Math.floor(0.1 * height);
-  var y = height - m.fontBoundingBoxDescent;
-  width = Math.floor(width + 2 * margin);
-  height = Math.floor(height + 2 * margin);
+  for (var i = 0 ; i < numLines ; i++) {
+    if (lines[i].mode == "timedtext")
+        lines[i].timedText = parseTimedText(document.getElementById("timed"+i).value, tenths);
+    else if (lines[i].mode == "static")
+        lines[i].static = document.getElementById("static"+i).value;
+    lines[i].metrics = lineMetrics(lines[i], ctx, tenths);
+  }
+  
+  var margin;
+  var width;
+  var height;
+  
+  var marginFrac = parseFloat(document.getElementById("margin").value);
+  
+  if (numLines == 1) {
+    margin = Math.ceil(marginFrac * lines[0].metrics.height);
+    width = 2 * margin + Math.ceil(lines[0].metrics.width);
+    height = 2 * margin + Math.ceil(lines[0].metrics.height);
+    lines[0].y = Math.floor(height - margin - lines[0].metrics.descent);
+  }
+  else {
+    maxHeight = Math.max(lines[0].metrics.height, lines[1].metrics.height);
+    margin = Math.ceil(marginFrac * maxHeight);
+    width = 2 * margin + Math.ceil(Math.max(lines[0].metrics.width, lines[1].metrics.width));
+    height = 3 * margin + Math.ceil(lines[0].metrics.height) + Math.ceil(lines[1].metrics.height);
+    lines[0].y = Math.floor(margin + lines[0].metrics.height - lines[0].metrics.descent);
+    lines[1].y = Math.floor(height - margin - lines[1].metrics.descent);
+  }
+  
   canvas.width = width;
   canvas.height = height;
   console.log(width,height);
@@ -376,14 +412,26 @@ async function generate(preview) {
       ctx.fillStyle = "#000080FF";
       console.log(t);
       ctx.font = font;
-      ctx.fillText(formatTime(t, tenths),margin,y);
+      for (var j=0; j<numLines; j++) {
+        var text = getText(t, tenths, lines[j]);
+        if (align == "left") {
+            ctx.fillText(text, margin, lines[j].y);
+        }
+        else {
+            var w = ctx.measureText(text).width;
+            if (align == "center") 
+                ctx.fillText(text, width/2 - w/2, lines[j].y);
+            else
+                ctx.fillText(text, width - margin - w, lines[j].y);
+        }
+      }
       if (preview)
         return true;
       if (i%10==0) await sleep(1); // refresh
       i++;
       var myImageData = new Uint32Array(ctx.getImageData(0, 0, width, height).data.buffer);
       var vp8 = await getVP8(canvas.width,canvas.height,myImageData);
-      var frame =  getANMF(width, height, frameTime, vp8);
+      var frame = getANMF(width, height, frameTime, vp8);
       frames.push( frame );
       framesLength += frame.length;
       t++;
@@ -406,24 +454,6 @@ function run(preview) {
     )
     .catch(err => { console.log(err); enableButtons(true); });
     return false;
-/*
-    var reader = new FileReader();
-    reader.onload = function () {
-      var data = new Uint8Array(reader.result);
-      xMux.decodeFrames(data).then(function (frames) {
-        console.log(frames);
-        encoded = xMux.encodeFrames(frames);
-        console.log(encoded);
-      });
-    };
-    fetch("nyan.webp").then(r => r.blob() )
-    .then(r => reader.readAsArrayBuffer(r));
-*/
-//  batch = { frameCount:1, width:canvas.width, height:canvas.height, loopCount:1, bgColor:255, frames: [frames[0]] };
-//  xMux.encodeFrames(batch).then(function(r) {
-//    downloadBlob("1.webp",new Blob([r]));
-//    }
-//  );
 }
 
 function changedLineOption(line) {
