@@ -493,6 +493,35 @@ function getARGB(elt) {
       (Math.floor(255*document.getElementById(elt + "A").value)<<24);
 }
 
+function digitFixedFillText(ctx, digitWidths, text, x, y) {
+    // draw text while making each digit the size of a zero
+    while(text.length) {
+        nextFix = text.search(/[1-9]/);
+        if (nextFix < 0) {
+            ctx.fillText(text, x, y);
+            return;
+        }
+        else if (nextFix > 0) {
+            var part = text.slice(0, nextFix);
+            ctx.fillText(part, x, y);
+            x += ctx.measureText(part).width;
+            text = text.slice(nextFix);
+        }
+        ctx.fillText(text[0], x + (digitWidths[0]-digitWidths[parseInt(text[0])])/2, y);
+        x += digitWidths[0];
+        text = text.slice(1);
+    }
+}
+
+function isMono(ctx) {
+    const test = " .WI0123456789";
+    var w = ctx.measureText(test[0]).width;
+    for (var i = 1; i<test.length; i++)
+        if (w != ctx.measureText(test[i]).width)
+            return false;
+    return true;
+}
+
 function getFont(ctx) {
     const fontName = document.getElementById("font").value;
     const fontSize = parseFloat(document.getElementById("size").value);
@@ -510,8 +539,18 @@ function getFont(ctx) {
     else {
         ctx.font = ""+fontSize+"px "+fontName;
         ctx.fillStyle = getColor("text");
-        measure = ( (text) => ctx.measureText(text) );
-        draw = ( (text,x,y) => ctx.fillText(text, x, y) );
+        if (!isMono(ctx)) {
+            measure = ( (text) => ctx.measureText(text.replace(/[1-9]/g,"0")) );
+            var digitWidths = [];
+            for (var i = 0 ; i <= 9 ; i++)
+                digitWidths[i] = ctx.measureText(i.toString()).width;
+            draw = ( (text,x,y) => digitFixedFillText(ctx, digitWidths, text, x, y) );
+        }
+        else {
+            console.log("mono");
+            measure = ( (text) => ctx.measureText(text) );
+            draw = ( (text,x,y) => ctx.fillText(text, x, y) );
+        }
     }
     return { measure:measure, draw:draw };
 }
@@ -595,7 +634,6 @@ async function generate(preview) {
   var t = preview ? ((end + start)/2)>>0 : start;
   var i = 0;
   while ((t <= end && ! countDown) || (end <= t && countDown)) {
-    console.log(t,start,end,countDown);
       ctx.clearRect(0, 0, width, height);
       var saved = ctx.fillStyle;
       ctx.fillStyle = back;
