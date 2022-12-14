@@ -170,6 +170,7 @@ Back:
 <script>
 
 var output = null;
+var countDown = false;
 
 var xMux = WebPXMux("https://cdn.jsdelivr.net/gh/sumimakito/webpxmux.js@master/dist/webpxmux.wasm");
     xMux.waitRuntime().then(function () {
@@ -194,6 +195,11 @@ async function downloadToDisc(output) {
         }
 
         await writableStream.close();
+        
+        const d = document.getElementById("downloadtext");
+        if (d.textContent.indexOf("(") < 0)
+            d.textContent += " (saved!)";
+
     }
     else {
         downloadBlob("animation.webp", new Blob(output));
@@ -362,12 +368,14 @@ function parseTime(s) {
 }
 
 function formatTime(t, format) {
+    round = countDown ? Math.ceil : Math.floor;
+
     if (t<0) {
-        return Math.flor(t / 1000).toString();
+        return round(t / 1000).toString();
     }
 
-    values = { x:Math.floor(t/100)%10, S:Math.floor(t/1000),
-               M:Math.floor(t/60000), H:Math.floor(t/3600000), D:Math.floor(t/86400000) };
+    values = { x:round(t/100)%10, S:round(t/1000),
+               M:round(t/60000), H:round(t/3600000), D:round(t/86400000) };
     values.s = values.S%60;
     values.m = values.M%60;
     values.h = values.H%60;
@@ -423,11 +431,21 @@ function getText(t, lineOptions) {
   else if (lineOptions.mode == "timedtext") {
     var text = "(empty)";
     var timedText = lineOptions.timedText;
-    for (var i = 0 ; i < timedText.length ; i++) {
-    if (t >= timedText[i].time) 
-        text = timedText[i].text;
-    else
-        break;
+    if (countDown) {
+        for (var i = timedText.length-1 ; i >= 0 ; i--) {
+            if (t <= timedText[i].time) 
+                text = timedText[i].text;
+            else
+                break;
+        }
+    }
+    else {
+        for (var i = 0 ; i < timedText.length ; i++) {
+            if (t >= timedText[i].time) 
+                text = timedText[i].text;
+            else
+                break;
+        }
     }
     return text;
   }
@@ -514,6 +532,8 @@ async function generate(preview) {
   const start = parseTime(document.getElementById("start").value);
   const end = parseTime(document.getElementById("end").value);
   
+  countDown = start > end;
+  
   for (var i = 0 ; i < numLines ; i++) {
     if (lines[i].mode == "timedtext")
         lines[i].timedText = parseTimedText(document.getElementById("timed"+i).value);
@@ -574,7 +594,8 @@ async function generate(preview) {
   
   var t = preview ? ((end + start)/2)>>0 : start;
   var i = 0;
-  while (t <= end) {
+  while ((t <= end && ! countDown) || (end <= t && countDown)) {
+    console.log(t,start,end,countDown);
       ctx.clearRect(0, 0, width, height);
       var saved = ctx.fillStyle;
       ctx.fillStyle = back;
@@ -602,7 +623,10 @@ async function generate(preview) {
       var frame = getANMF(width, height, precision, vp8);
       output.push( frame );
       framesLength += frame.length;
-      t+=precision;
+      if (countDown)
+        t-=precision;
+      else
+        t+=precision;
   }
   output[0] = makeWebpHeader(framesLength, width, height, getARGB("back"));
   const d = document.getElementById("downloadtext");
