@@ -2,7 +2,7 @@
 <title>Timer and Text Video Generator</title>
 <!-- MIT License -->
 <body>
-<h1>Timer and Text Video Generator (WebP Animation)</h1>
+<h1>Timer and Text Video WebP Animation Generator</h1>
 
 <form>
 <label for="line0">Line 1:</label>
@@ -362,7 +362,10 @@ function parseTime(s) {
     
     for (var i = v.length - 1 ; i >= 0 ; i--) {
         t += mul * parseFloat(v[i]);
-        mul *= 60;
+        if (mul < 3600*1000) 
+            mul *= 60;
+        else
+            mul = 86400*1000;
     }
     return sign * t;
 }
