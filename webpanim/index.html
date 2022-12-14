@@ -1,10 +1,55 @@
 <html>
-<title>Timer Video Generator</title>
+<title>Timer and Text Video Generator</title>
 <body>
-<h1>Timer Video Generator (WebP Animation)</h1>
+<h1>Timer and Text Video Generator (WebP Animation)</h1>
 
 <form>
+<label for="line0">Line 1:</label>
+<select name="line0" id="line0" onchange="changedLineOption(0)">
+  <option value="sx">S.X</option>
+  <option value="ssx">SS.X</option>
+  <option value="mssx">M:SS.X</option>
+  <option value="mmssx" selected>MM:SS.X</option>
+  <option value="hmmssx">H:MM:SS.X</option>
+  <option value="s">S</option>
+  <option value="ss">SS</option>
+  <option value="mss">M:SS</option>
+  <option value="mmss">MM:SS</option>
+  <option value="hmmss">H:MM:SS</option>
+  <option value="static">Static text</option>
+  <option value="timedtext">Timed text</option>
+</select>
+<br/>
+<input type="text" id="static0" value="" placeholder="Static text" hidden="true"/>
+<textarea id="timed0" name="text" rows="10" cols="60" placeholder="00:00 Start" hidden="true"></textarea>
+<br/>
+<label for="line1">Line 2:</label>
+<select name="line1" id="line1" onchange="changedLineOption(1)">
+  <option value="none" selected>None</option>
+  <option value="sx">S.X</option>
+  <option value="ssx">SS.X</option>
+  <option value="mssx">M:SS.X</option>
+  <option value="mmssx">MM:SS.X</option>
+  <option value="hmmssx">H:MM:SS.X</option>
+  <option value="s">S</option>
+  <option value="ss">SS</option>
+  <option value="mss">M:SS</option>
+  <option value="mmss">MM:SS</option>
+  <option value="hmmss">H:MM:SS</option>
+  <option value="static">Static text</option>
+  <option value="timedtext">Timed text</option>
+</select>
+<br/>
+<input type="text" id="static1" value="" placeholder="Static text" hidden="true"/>
+<textarea id="timed1" name="text" rows="10" cols="60" placeholder="00:00 Start" hidden="true" ></textarea>
+<br/>
+
+<table>
+<tr>
+<td>
 <label for="font">Font:</label>
+</td>
+<td>
 <select name="font" id="font">
   <option value="Hershey Sans">Hershey Sans</option>
   <option value="Hershey SansBold">Hershey Sans Bold</option>
@@ -33,60 +78,75 @@
   <option value="Trebuchet MS">Trebuchet MS</option>
   <option value="Verdana">Verdana</option>
 </select>
-
+</td>
+</tr>
+<tr>
+<td>
 <label for="size">Size:</label>
+</td>
+<td>
 <input type="number" id="size" min="4" max="400" value="30" size="4"/>
-<br/>
+</td>
+</tr>
+<tr>
+<td>
 <label for="start">Start:</label>
+</td>
+<td>
 <input type="text" id="start" value="00:00"/>
-<br/>
+</td>
+</tr>
+<tr>
+<td>
 <label for="end">End:</label>
+</td>
+<td>
 <input type="text" id="end" value="01:00"/>
-<br/>
-<input type="checkbox" id="tenths" checked/>
-<label for="tenths">Show tenths of a second</id>
-<br/>
-Text: 
+</td>
+</tr>
+<tr>
+<td>
+Text:
+</td>
+<td>
 <label for="textR">Red</label> <input id = "textR" type="number" min="0" max="255" size="4" value="0"/>
 <label for="textG">Green</label> <input id = "textG" type="number" min="0" max="255" size="4" value="0"/>
 <label for="textB">Blue</label> <input id = "textB" type="number" min="0" max="255" size="4" value="128"/>
 <label for="textA">Opacity</label> <input id = "textA" type="number" min="0" max="1" size="4" value="1" step="0.05"/>
-<br/>
-Back: 
+</td>
+</tr> 
+<tr>
+<td>
+Back:
+</td> 
+<td>
 <label for="backR">Red</label> <input id = "backR" type="number" min="0" max="255" size="4" value="0"/>
 <label for="backG">Green</label> <input id = "backG" type="number" min="0" max="255" size="4" value="0"/>
 <label for="backB">Blue</label> <input id = "backB" type="number" min="0" max="255" size="4" value="0"/>
 <label for="backA">Opacity</label> <input id = "backA" type="number" min="0" max="1" size="4" value="0.5" step="0.05"/>
-<br/>
-
-<label for="margin">Margin fraction:</id>
+</td>
+</tr>
+<tr>
+<td>
+<label for="margin">Margin:</label>
+</td>
+<td>
 <input type="number" min="0" max="2" value="0.1" step="0.05" size="4" id="margin"/>
+</td>
+</tr>
+<tr>
+<td>
+<label for="align">Align:</label>
+</td>
+<td>
 <select name="align" id="align">
   <option value="left">Left</option>
   <option value="right">Right</option>
   <option value="center" selected>Center</option>
 </select>
-<br/>
-<label for="line0">Line 1:</label>
-<select name="line0" id="line0" onchange="changedLineOption(0)">
-  <option value="static">Static text</option>
-  <option value="timer" selected>Timer</option>
-  <option value="timedtext">Timed text</option>
-</select>
-<br/>
-<input type="text" id="static0" value="" placeholder="Static text" hidden="true"/>
-<textarea id="timed0" name="text" rows="10" cols="60" placeholder="00:00 Start" hidden="true"></textarea>
-<br/>
-<label for="line1">Line 2:</label>
-<select name="line1" id="line1" onchange="changedLineOption(1)">
-  <option value="none" selected>None</option>
-  <option value="static">Static text</option>
-  <option value="timer">Timer</option>
-  <option value="timedtext">Timed text</option>
-</select>
-<br/>
-<input type="text" id="static1" value="" placeholder="Static text" hidden="true"/>
-<textarea id="timed1" name="text" rows="10" cols="60" placeholder="00:00 Start" hidden="true" ></textarea>
+</td>
+</tr>
+</table>
 <br/>
 <button type="button" disabled="true" id="preview" onClick="run(true);">Preview</button>
 <button type="button" disabled="true" id="go" onClick="run(false);">Generate!</button>
@@ -270,7 +330,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function parseTime(s,tenths) {
+function parseTime(s) {
     var sign = 1;
     if (s[0] == '-') {
         sign = -1;
@@ -278,44 +338,54 @@ function parseTime(s,tenths) {
     }
     
     var t = 0;
-    var mul = 1;
-
-    var x = s.split(".");
-    if (tenths) {
-        if (x.length > 1)
-            t = parseInt(x[1][0]);
-        mul = 10;
+    var mul = 1000;
+    const v = s.split(":");
+    var last = v[v.length-1];
+    var decimal = last.indexOf(".");
+    if (decimal >= 0) {
+        t = parseInt((last.substr(decimal+1)+"000").substr(0,3));
+        v[v.length-1] = last.substr(0,decimal);
     }
     
-    var v = x[0].split(":");
     for (var i = v.length - 1 ; i >= 0 ; i--) {
-        t += mul * parseInt(v[i]);
+        t += mul * parseFloat(v[i]);
         mul *= 60;
     }
     return sign * t;
 }
 
-function formatTime(t, tenths) {
+function formatTime(t, format) {
     if (t<0) {
-        if (tenths) {
-            return Math.floor(t/10).toString();
-        }
-        else {
-            return t.toString();
-        }
+        return Math.flor(t / 1000).toString();
     }
     var decimal = "";
-    if (tenths) {
-        decimal = "."+(t%10).toString();
-        t = (t/10) >> 0;
+    if (format.endsWith("x")) {
+        decimal = "."+Math.floor((t%1000)/100).toString();
+        format = format.substr(0,format.length-1);
     }
-    s = t % 60;
-    m = ( (t / 60) >> 0 );
-//    h = (t / 3600) >> 0;
-    return m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + decimal;
+    t = Math.floor(t/1000);
+    if (format == "s")
+        return t.toString() + decimal;
+    else if (format == "ss")
+        return t.toString().padStart(2, "0") + decimal;
+    
+    var s = t % 60;
+    var m = Math.floor(t / 60);
+    
+    if (format == "mmss") 
+        return m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + decimal;
+    else if (format == "mss")
+        return m.toString() + ":" + s.toString().padStart(2, "0") + decimal;
+        
+    var h = Math.floor(m / 60);
+    
+    m = m % 60;
+    
+    return h.toString() + ":" + m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + decimal;
+    
 }
 
-function parseTimedText(text, tenths) {
+function parseTimedText(text) {
   timedText = [];
   lines = text.split(/\r?\n/);
   for (var i = 0 ; i < lines.length ; i++) {
@@ -325,49 +395,53 @@ function parseTimedText(text, tenths) {
         var show = "";
         const found = line.match(/([^\s]*)\s+(.*)/);
         if (found) {
-            t = parseTime(found[1], tenths);
+            t = parseTime(found[1]);
             show = found[2];
         }
         else {
-            t = parseTime(line, tenths);
+            t = parseTime(line);
         }
         timedText.push( { "time": t, "text": show } );
     }
   }
   timedText.sort((a,b) => a.time - b.time);
+  console.log(timedText);
   return timedText;
 }
 
-function getText(t, tenths, lineOptions) {
+function getText(t, lineOptions) {
   if (lineOptions.mode == "none")
     return "";
-  else if (lineOptions.mode == "timer")
-    return formatTime(t, tenths);
   else if (lineOptions.mode == "static")
     return lineOptions.static;
-  var text = "(empty)";
-  var timedText = lineOptions.timedText;
-  for (var i = 0 ; i < timedText.length ; i++) {
+  else if (lineOptions.mode == "timedtext") {
+    var text = "(empty)";
+    var timedText = lineOptions.timedText;
+    for (var i = 0 ; i < timedText.length ; i++) {
     if (t >= timedText[i].time) 
         text = timedText[i].text;
     else
         break;
+    }
+    return text;
   }
-  return text;
+  else {
+    return formatTime(t, lineOptions.mode);
+  }
 }
 
-function lineMetrics(line, font, start, end, tenths) {
+function lineMetrics(line, font, start, end) {
     var texts;
-    if (line.mode == "timer") {
-        texts = [ formatTime(start, tenths), formatTime(((start+end)/2) >> 0, tenths), formatTime(end, tenths) ];
-    }
-    else if (line.mode == "static") {
+    if (line.mode == "static") {
         texts = [ line.static ];
     }
     else if (line.mode == "timedtext") {
         texts = [];
         for (var i = 0 ; i < line.timedText.length ; i++)
             texts.push(line.timedText[i].text);
+    }
+    else {
+        texts = [ formatTime(start, line.mode), formatTime(((start+end)/2) >> 0, line.mode), formatTime(end, line.mode) ];
     }
     var metrics = { width:0, ascent:0, descent:0 };
     for (var i = 0 ; i < texts.length ; i++) {
@@ -420,8 +494,6 @@ function getFont(ctx) {
 async function generate(preview) {
   output = [null];
  
-  const tenths = document.getElementById("tenths").checked;
-  const frameTime = tenths ? 100 : 1000; // milliseconds
   const align = document.getElementById("align").value;
   
   const back = getColor("back");
@@ -432,15 +504,32 @@ async function generate(preview) {
   const canvas = document.getElementById("myCanvas");  
   var ctx = canvas.getContext("2d", { willReadFrequently: true });
   var font = getFont(ctx);
-  const start = parseTime(document.getElementById("start").value, tenths);
-  const end = parseTime(document.getElementById("end").value, tenths);
+  const start = parseTime(document.getElementById("start").value);
+  const end = parseTime(document.getElementById("end").value);
   
   for (var i = 0 ; i < numLines ; i++) {
     if (lines[i].mode == "timedtext")
-        lines[i].timedText = parseTimedText(document.getElementById("timed"+i).value, tenths);
+        lines[i].timedText = parseTimedText(document.getElementById("timed"+i).value);
     else if (lines[i].mode == "static")
         lines[i].static = document.getElementById("static"+i).value;
-    lines[i].metrics = lineMetrics(lines[i], font, start, end, tenths);
+    lines[i].metrics = lineMetrics(lines[i], font, start, end);
+  }
+  
+  var precision = (lines[0].mode.endsWith("x") || lines[1].mode.endsWith("x")) ? 100 : 1000;
+  
+  if (precision == 1000) {
+      for (var i=0; i<numLines ; i++) {
+        var tt = lines[i].timedText;
+        if (tt) {
+            for (var j=0; j<numLines;j++) {
+                if (tt[j].time % 1000) {
+                    precision = 100;
+                    i = numLines;
+                    break;
+                }
+            }
+        }
+      }
   }
   
   var margin;
@@ -484,7 +573,7 @@ async function generate(preview) {
       ctx.fillRect(0, 0, width, height);
       ctx.fillStyle = saved;
       for (var j=0; j<numLines; j++) {
-        const text = getText(t, tenths, lines[j]);
+        const text = getText(t, lines[j]);
         if (align == "left") {
             font.draw(text, margin, lines[j].y);
         }
@@ -502,10 +591,10 @@ async function generate(preview) {
       i++;
       var myImageData = new Uint32Array(ctx.getImageData(0, 0, width, height).data.buffer);
       var vp8 = await getVP8(width, height, myImageData);
-      var frame = getANMF(width, height, frameTime, vp8);
+      var frame = getANMF(width, height, precision, vp8);
       output.push( frame );
       framesLength += frame.length;
-      t++;
+      t+=precision;
   }
   output[0] = makeWebpHeader(framesLength, width, height, getARGB("back"));
   const d = document.getElementById("downloadtext");
