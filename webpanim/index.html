@@ -7,16 +7,16 @@
 <form>
 <label for="line0">Line 1:</label>
 <select name="line0" id="line0" onchange="changedLineOption(0)">
-  <option value="sx">S.X</option>
-  <option value="ssx">SS.X</option>
-  <option value="mssx">M:SS.X</option>
-  <option value="mmssx" selected>MM:SS.X</option>
-  <option value="hmmssx">H:MM:SS.X</option>
-  <option value="s">S</option>
-  <option value="ss">SS</option>
-  <option value="mss">M:SS</option>
-  <option value="mmss">MM:SS</option>
-  <option value="hmmss">H:MM:SS</option>
+  <option value="S.x">S.x</option>
+  <option value="SS.x">SS.x</option>
+  <option value="M:ss.x">M:ss.x</option>
+  <option value="MM:ss.x" selected>MM:ss.x</option>
+  <option value="H:mm:ss.x">H:mm:ss.x</option>
+  <option value="S">S</option>
+  <option value="SS">SS</option>
+  <option value="M:ss">M:ss</option>
+  <option value="MM:ss">MM:ss</option>
+  <option value="H:mm:ss">H:mm:ss</option>
   <option value="static">Static text</option>
   <option value="timedtext">Timed text</option>
 </select>
@@ -27,16 +27,16 @@
 <label for="line1">Line 2:</label>
 <select name="line1" id="line1" onchange="changedLineOption(1)">
   <option value="none" selected>None</option>
-  <option value="sx">S.X</option>
-  <option value="ssx">SS.X</option>
-  <option value="mssx">M:SS.X</option>
-  <option value="mmssx">MM:SS.X</option>
-  <option value="hmmssx">H:MM:SS.X</option>
-  <option value="s">S</option>
-  <option value="ss">SS</option>
-  <option value="mss">M:SS</option>
-  <option value="mmss">MM:SS</option>
-  <option value="hmmss">H:MM:SS</option>
+  <option value="S.x">S.x</option>
+  <option value="SS.x">SS.x</option>
+  <option value="M:ss.x">M:ss.x</option>
+  <option value="MM:ss.x">MM:ss.x</option>
+  <option value="H:mm:ss.x">H:mm:ss.x</option>
+  <option value="S">S</option>
+  <option value="SS">SS</option>
+  <option value="M:ss">M:ss</option>
+  <option value="MM:ss">MM:ss</option>
+  <option value="H:mm:ss">H:mm:ss</option>
   <option value="static">Static text</option>
   <option value="timedtext">Timed text</option>
 </select>
@@ -328,7 +328,6 @@ function makeWebpHeader(frameSize,width,height,bgColor) {
     set32(webp, pos, fourCC('ANIM'));
     set32(webp, pos+4, 14-8);
     set32(webp, pos+8, bgColor);
-    console.log(bgColor);
     set16(webp, pos+8+4, 1); // loop count
     
     return webp;
@@ -366,31 +365,30 @@ function formatTime(t, format) {
     if (t<0) {
         return Math.flor(t / 1000).toString();
     }
-    var decimal = "";
-    if (format.endsWith("x")) {
-        decimal = "."+Math.floor((t%1000)/100).toString();
-        format = format.substr(0,format.length-1);
+
+    values = { x:Math.floor(t/100)%10, S:Math.floor(t/1000),
+               M:Math.floor(t/60000), H:Math.floor(t/3600000), D:Math.floor(t/86400000) };
+    values.s = values.S%60;
+    values.m = values.M%60;
+    values.h = values.H%60;
+    
+    out = "";
+    
+    for (var i=0; i<format.length; i++) {
+        var f = format[i];
+        var v = values[f];
+        if (v !== undefined) {
+            var j;
+            for (j=i+1; j<format.length && format[j] == f; j++) ;
+            out += v.toString().padStart(j-i, "0");
+            i = j - 1;
+        }
+        else {
+            out += f;
+        }
     }
-    t = Math.floor(t/1000);
-    if (format == "s")
-        return t.toString() + decimal;
-    else if (format == "ss")
-        return t.toString().padStart(2, "0") + decimal;
     
-    var s = t % 60;
-    var m = Math.floor(t / 60);
-    
-    if (format == "mmss") 
-        return m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + decimal;
-    else if (format == "mss")
-        return m.toString() + ":" + s.toString().padStart(2, "0") + decimal;
-        
-    var h = Math.floor(m / 60);
-    
-    m = m % 60;
-    
-    return h.toString() + ":" + m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0") + decimal;
-    
+    return out;
 }
 
 function parseTimedText(text) {
