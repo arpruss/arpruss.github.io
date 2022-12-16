@@ -17,12 +17,12 @@
   <option value="M:ss">M:ss</option>
   <option value="MM:ss">MM:ss</option>
   <option value="H:mm:ss">H:mm:ss</option>
-  <option value="static">Static text</option>
+  <option value="custom">Custom formatting</option>
   <option value="timedtext">Timed text</option>
 </select>
 <br/>
-<input type="text" id="static0" value="" placeholder="Static text" hidden="true"/>
-<textarea id="timed0" name="text" rows="10" cols="60" placeholder="00:00 Start" hidden="true"></textarea>
+<input type="text" id="custom0" value="" placeholder="Current time: {hh:mm pm}." hidden="true"/>
+<textarea id="timed0" name="text" rows="10" cols="100" placeholder="00:00 Start" hidden="true"></textarea>
 <br/>
 <label for="line1">Line 2:</label>
 <select name="line1" id="line1" onchange="changedLineOption(1)">
@@ -37,12 +37,12 @@
   <option value="M:ss">M:ss</option>
   <option value="MM:ss">MM:ss</option>
   <option value="H:mm:ss">H:mm:ss</option>
-  <option value="static">Static text</option>
+  <option value="custom">Custom formatting</option>
   <option value="timedtext">Timed text</option>
 </select>
 <br/>
-<input type="text" id="static1" value="" placeholder="Static text" hidden="true"/>
-<textarea id="timed1" name="text" rows="10" cols="60" placeholder="00:00 Start" hidden="true" ></textarea>
+<input type="text" id="custom1" value="" placeholder="Current time: {hh:mm pm}." hidden="true"/>
+<textarea id="timed1" name="text" rows="10" cols="100" placeholder="00:00 Start" hidden="true" ></textarea>
 <br/>
 
 <table>
@@ -382,17 +382,31 @@ function parseTime(s) {
 }
 
 function formatTime(t, format) {
-    round = countDown ? Math.ceil : Math.floor;
+    var round = countDown ? Math.ceil : Math.floor;
 
     if (t<0) {
         return round(t / 1000).toString();
     }
 
-    values = { x:round(t/100)%10, S:round(t/1000),
+    var values = { x:round(t/100)%10, S:round(t/1000),
                M:round(t/60000), H:round(t/3600000), D:round(t/86400000) };
     values.s = values.S%60;
     values.m = values.M%60;
-    values.h = values.H%60;
+    values.h = values.H%24;
+    
+    var ending = "";
+    if (format.endsWith("am") || format.endsWith("pm") || format.endsWith("AM") || format.endsWith("PM")) {
+        if (values.h >= 12) {
+            ending = format.endsWith("m") ? "pm" : "PM";
+            values.h -= 12;
+        }
+        else {
+            ending = format.endsWith("m") ? "am" : "AM";
+            if (values.h == 0)
+                values.h = 12;
+        }
+        format = format.substr(0,format.length-2);
+    }
     
     out = "";
     
@@ -410,7 +424,7 @@ function formatTime(t, format) {
         }
     }
     
-    return out;
+    return out+ending;
 }
 
 function parseTimedText(text) {
@@ -437,11 +451,62 @@ function parseTimedText(text) {
   return timedText;
 }
 
+function formatCustomText(t, customText) {
+    out = "";
+    
+    for (var i = 0 ; i < customText.length ; i++) {
+        var c = customText[i];
+        if (c == '\\') {
+            if (i + 1 == customText.length) {
+                out += c;
+            }
+            else {
+                out += customText[i+1];
+                i++;
+            }
+        }
+        else if (c == '{') {
+            var f = "";
+            i++;
+            for (; i < customText.length ; i++) {
+                c = customText[i];
+                if (c == '\\') {
+                    if (i + 1 == customText.length) {
+                        f += c;
+                    }
+                    else {
+                        f += customText[i+1];
+                        i++;
+                    }
+                }
+                else if ( c == '}' ) {
+                    out += formatTime(t, f);
+                    break;
+                }
+                else {
+                    f += c;
+                }
+            }
+            if (i >= customText.length) 
+                out += formatTime(t, f);
+        }
+        else {
+            out += c;
+        }
+    }
+    return out;
+}
+
+function helpCustom() {
+var popup = document.getElementById("myPopup");
+  popup.classList.toggle("show");
+  }
+
 function getText(t, lineOptions) {
   if (lineOptions.mode == "none")
     return "";
-  else if (lineOptions.mode == "static")
-    return lineOptions.static;
+  else if (lineOptions.mode == "custom")
+    return formatCustomText(t, lineOptions.custom);
   else if (lineOptions.mode == "timedtext") {
     var text = "(empty)";
     var timedText = lineOptions.timedText;
@@ -470,8 +535,17 @@ function getText(t, lineOptions) {
 
 function lineMetrics(line, font, start, end) {
     var texts;
-    if (line.mode == "static") {
-        texts = [ line.static ];
+    if (line.mode == "custom") {
+        texts = [];
+        for (t = Math.min(start,end) ; t <= Math.max(start,end) ; t += 1000) {
+            if (t < Math.max(start,end)) {
+                texts.push(getText(t + 123, line));
+            }
+            else if (t < Math.max(start,end)) {
+                texts.push(getText(t + 123, line));
+            }
+        }
+        console.log(texts);
     }
     else if (line.mode == "timedtext") {
         texts = [];
@@ -561,7 +635,6 @@ function getFont(ctx) {
             draw = ( (text,x,y) => digitFixedFillText(ctx, digitWidths, text, x, y) );
         }
         else {
-            console.log("mono");
             measure = ( (text) => ctx.measureText(text) );
             draw = ( (text,x,y) => ctx.fillText(text, x, y) );
         }
@@ -591,8 +664,8 @@ async function generate(preview) {
   for (var i = 0 ; i < numLines ; i++) {
     if (lines[i].mode == "timedtext")
         lines[i].timedText = parseTimedText(document.getElementById("timed"+i).value);
-    else if (lines[i].mode == "static")
-        lines[i].static = document.getElementById("static"+i).value;
+    else if (lines[i].mode == "custom")
+        lines[i].custom = document.getElementById("custom"+i).value;
     lines[i].metrics = lineMetrics(lines[i], font, start, end);
   }
   
@@ -719,7 +792,7 @@ function changedFont() {
 
 function changedLineOption(line) {
     var v = document.getElementById("line"+line).value;
-    document.getElementById("static"+line).hidden = v != "static";
+    document.getElementById("custom"+line).hidden = v != "custom";
     document.getElementById("timed"+line).hidden = v != "timedtext";
 }
 </script>    
